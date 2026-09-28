@@ -1,0 +1,13 @@
+# Keep this repository limited to the final publishable MIRS build.
+*
+!.gitignore
+!README.md
+!dist/
+dist/*
+!dist/index.html
+!dist/_redirects
+!dist/favicon.svg
+!dist/mirs-future.css
+!dist/mirs-future.js
+!dist/assets/
+!dist/assets/**
