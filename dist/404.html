@@ -15,13 +15,10 @@
         const parts = location.pathname.split('/').filter(Boolean);
         const basePath = location.hostname.endsWith('.github.io') && parts[0] ? `/${parts[0]}/` : '/';
         document.getElementById('site-base').href = basePath;
-        const restoredRoute = new URLSearchParams(location.search).get('route');
-        if (restoredRoute && basePath !== '/') history.replaceState(null, '', `${basePath.slice(0, -1)}${restoredRoute}`);
         try { document.documentElement.dataset.theme = localStorage.getItem('mirs-future-theme') || 'dark'; } catch { document.documentElement.dataset.theme = 'dark'; }
       })();
     </script>
-    <title>MIRS SARL — Structurer l’avenir numérique</title>
-    <script type="application/ld+json">{"@context":"https://schema.org","@type":"Organization","name":"MIRS SARL","alternateName":"Maintenance Informatique, Réseaux & Systèmes","foundingDate":"2006","url":"https://mirsgn.com","address":{"@type":"PostalAddress","addressLocality":"Conakry","addressCountry":"GN"},"subOrganization":[{"@type":"Organization","name":"MIRS Informatique"},{"@type":"Organization","name":"MIRS Imprimerie"}]}</script>
+    <title>MIRS SARL — Spatial Systems</title>
     <link rel="stylesheet" href="mirs-future.css" />
   </head>
   <body>

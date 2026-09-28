@@ -1,4 +1,12 @@
-const AS = '/assets/';
+const BASE_PATH = new URL('.', document.baseURI).pathname.replace(/\/$/, '');
+const AS = `${BASE_PATH}/assets/`;
+const pageHref = (path) => `${BASE_PATH}${path}` || '/';
+
+function pageRoute(path = location.pathname) {
+  if (!BASE_PATH) return path.replace(/\/+$/, '') || '/';
+  const withoutBase = path === BASE_PATH ? '/' : path.startsWith(`${BASE_PATH}/`) ? path.slice(BASE_PATH.length) : path;
+  return withoutBase.replace(/\/+$/, '') || '/';
+}
 
 function storedCart() {
   try {
@@ -235,7 +243,7 @@ function checkout() {
 }
 
 function route(path = location.pathname) {
-  const clean = path.replace(/\/+$/, '') || '/';
+  const clean = pageRoute(path);
   const page = clean === '/' ? home()
     : clean === '/informatique' ? branch('informatique')
       : clean === '/imprimerie' ? branch('imprimerie')
@@ -322,6 +330,8 @@ function bind() {
   const controller = new AbortController();
   routeAbort = controller;
   const { signal } = controller;
+
+  document.querySelectorAll('[data-link][href^="/"]').forEach((item) => item.setAttribute('href', pageHref(item.getAttribute('href'))));
 
   document.querySelectorAll('[data-link]').forEach((item) => item.addEventListener('click', (event) => {
     const href = item.getAttribute('href') || '';
