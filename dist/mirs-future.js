@@ -1,8 +1,19 @@
 const AS = '/assets/';
 
+function storedCart() {
+  try {
+    const saved = JSON.parse(localStorage.getItem('mirs-future-cart') || '[]');
+    return Array.isArray(saved) ? saved.filter((item) => typeof item === 'string').slice(0, 50) : [];
+  } catch {
+    // A stale or hand-edited local value must never prevent the application
+    // from rendering. The next cart update will replace it with valid JSON.
+    return [];
+  }
+}
+
 const state = {
   theme: localStorage.getItem('mirs-future-theme') || 'dark',
-  cart: JSON.parse(localStorage.getItem('mirs-future-cart') || '[]'),
+  cart: storedCart(),
 };
 
 const clients = [
@@ -23,7 +34,7 @@ const products = {
   tech: [
     ['PC professionnel', 'editorial/equipement-clavier.jpg', 'Équiper'],
     ['Réseau & Wi-Fi', 'editorial/maintenance-pc.jpg', 'Configurer'],
-    ['Sécurité intelligente', 'informatique-team.png', 'Protéger'],
+    ['Sécurité intelligente', 'future/informatique-team.jpg', 'Protéger'],
     ['Support & maintenance', 'editorial/maintenance-pc.jpg', 'Demander'],
   ],
   print: [
@@ -42,6 +53,28 @@ const courses = [
   ['Marketing digital', 'Contenu · Campagnes'],
   ['Live coding', 'HTML · CSS · Projet'],
 ];
+
+// The production bundle keeps the original MP4 files. The GitHub source also
+// contains transport chunks so a static clone can recover a film if an MP4 is
+// omitted by a host or exceeds its single-file upload allowance.
+const videoChunks = {
+  'technology-flow.mp4': [
+    'technology-flow-aaa', 'technology-flow-aab', 'technology-flow-aac', 'technology-flow-aad',
+    'technology-flow-aae', 'technology-flow-aaf', 'technology-flow-aag', 'technology-flow-aah',
+    'technology-flow-aai', 'technology-flow-aaj', 'technology-flow-aak', 'technology-flow-aal',
+    'technology-flow-aam', 'technology-flow-aan', 'technology-flow-aao', 'technology-flow-aap',
+    'technology-flow-aaq', 'technology-flow-aar', 'technology-flow-aas', 'technology-flow-aat',
+    'technology-flow-aau', 'technology-flow-aav',
+  ],
+  'imprimerie-presentation.mp4': [
+    'imprimerie-presentation-aaa', 'imprimerie-presentation-aab', 'imprimerie-presentation-aac',
+    'imprimerie-presentation-aad', 'imprimerie-presentation-aae', 'imprimerie-presentation-aaf',
+    'imprimerie-presentation-aag', 'imprimerie-presentation-aah', 'imprimerie-presentation-aai',
+    'imprimerie-presentation-aaj', 'imprimerie-presentation-aak', 'imprimerie-presentation-aal',
+    'imprimerie-presentation-aam', 'imprimerie-presentation-aan', 'imprimerie-presentation-aao',
+    'imprimerie-presentation-aap',
+  ],
+};
 
 let routeAbort = null;
 
@@ -72,10 +105,10 @@ function header() {
       <button type="button" data-theme aria-label="Changer le thème"><span>◐</span></button>
       <button type="button" data-cart aria-label="Ouvrir le panier"><span>Panier</span><b>${state.cart.length}</b></button>
       ${button('/contact', 'Demander un devis', 'f-header-cta')}
-      <button type="button" data-menu class="f-menu" aria-label="Ouvrir le menu"><span></span><span></span></button>
+      <button type="button" data-menu class="f-menu" aria-label="Ouvrir le menu" aria-controls="site-mobile-navigation" aria-expanded="false"><span></span><span></span></button>
     </div>
   </header>
-  <aside class="f-mobile" data-mobile-menu aria-label="Menu mobile">
+  <aside id="site-mobile-navigation" class="f-mobile" data-mobile-menu aria-label="Menu mobile" hidden>
     ${link('/', 'Accueil')}${link('/informatique', 'Informatique')}${link('/imprimerie', 'Imprimerie')}${link('/formation', 'Formation')}${link('/realisations', 'Réalisations')}${link('/contact', 'Parler à MIRS', 'f-button')}
   </aside>`;
 }
@@ -104,8 +137,8 @@ function home() {
     </section>
 
     <section class="f-intent" data-inview><div class="f-section-heading"><p class="f-overline">01 · CHOISISSEZ UNE DIRECTION</p><h2 data-reveal>${mark('TROIS SYSTÈMES.<br>UN MÊME ÉLAN.')}</h2></div><div class="f-intent-grid">
-      <a href="/informatique" data-link class="f-intent-card f-tech"><img src="${AS}informatique-team.png" alt="Équipe MIRS Informatique" loading="lazy"><div><small>01 / INFORMATIQUE</small><h3>CONNECTER.<br>PROTÉGER.</h3><span>Réseaux · Sécurité · Support</span><b>Explorer ↗</b></div></a>
-      <a href="/imprimerie" data-link class="f-intent-card f-print"><img src="${AS}imprimerie-team.png" alt="Équipe MIRS Imprimerie" loading="lazy"><div><small>02 / IMPRIMERIE</small><h3>IMAGINER.<br>PRODUIRE.</h3><span>Impression · Digital · Objets</span><b>Explorer ↗</b></div></a>
+      <a href="/informatique" data-link class="f-intent-card f-tech"><img src="${AS}future/informatique-team.jpg" alt="Équipe MIRS Informatique" loading="lazy"><div><small>01 / INFORMATIQUE</small><h3>CONNECTER.<br>PROTÉGER.</h3><span>Réseaux · Sécurité · Support</span><b>Explorer ↗</b></div></a>
+      <a href="/imprimerie" data-link class="f-intent-card f-print"><img src="${AS}future/imprimerie-team.jpg" alt="Équipe MIRS Imprimerie" loading="lazy"><div><small>02 / IMPRIMERIE</small><h3>IMAGINER.<br>PRODUIRE.</h3><span>Impression · Digital · Objets</span><b>Explorer ↗</b></div></a>
       <a href="/formation" data-link class="f-intent-card f-learn"><img src="${AS}editorial/formation-collaboration.jpg" alt="Formation MIRS" loading="lazy"><div><small>03 / FORMATION</small><h3>APPRENDRE.<br>AGIR.</h3><span>AMADEUS · Office · Coding</span><b>Explorer ↗</b></div></a>
     </div></section>
 
@@ -125,7 +158,7 @@ function home() {
 
     <section class="f-shop" data-inview><div class="f-shop-head"><p class="f-overline">04 · BOUTIQUE MIRS</p><h2 data-reveal>${mark('CHOISIR.<br>CONFIGURER.<br>AVANCER.')}</h2><div class="f-shop-switch"><button type="button" class="is-active" data-product-tab="tech">INFORMATIQUE</button><button type="button" data-product-tab="print">IMPRIMERIE</button></div></div><div class="f-product-rail" data-products="tech">${productRail('tech')}</div><div class="f-product-rail is-hidden" data-products="print">${productRail('print', true)}</div></section>
 
-    <section class="f-proofs" data-inview><div><p class="f-overline">05 · ILS NOUS FONT CONFIANCE</p><h2 data-reveal>${mark('DES PROJETS<br>QUI COMPTENT.')}</h2><p>Institutions, entreprises et organisations accompagnées par MIRS.</p>${button('/realisations', 'Voir les réalisations', 'f-quiet')}</div><div class="f-logo-panels"><img src="${AS}references-institutions.png" alt="Logos des institutions clientes MIRS" loading="lazy"><img src="${AS}references-enterprises.png" alt="Logos des entreprises clientes MIRS" loading="lazy"></div></section>
+    <section class="f-proofs" data-inview><div><p class="f-overline">05 · ILS NOUS FONT CONFIANCE</p><h2 data-reveal>${mark('DES PROJETS<br>QUI COMPTENT.')}</h2><p>Institutions, entreprises et organisations accompagnées par MIRS.</p>${button('/realisations', 'Voir les réalisations', 'f-quiet')}</div><div class="f-logo-panels"><img src="${AS}future/references-institutions.jpg" alt="Logos des institutions clientes MIRS" loading="lazy"><img src="${AS}future/references-enterprises.jpg" alt="Logos des entreprises clientes MIRS" loading="lazy"></div></section>
     ${logoRail()}
 
     <section class="f-voices" data-inview><div class="f-voice-top"><p class="f-overline">06 · RETOURS DE TERRAIN</p><h2 data-reveal>${mark('CE QUE NOS<br>PARTENAIRES<br>VALORISENT.')}</h2></div><div class="f-voice-track" data-voices>
@@ -147,7 +180,7 @@ function productRail(type, doubled = false) {
 
 function addReferenceAtlas() {
   document.querySelectorAll('.f-logo-panels').forEach((panel) => {
-    panel.insertAdjacentHTML('beforeend', `<img src="${AS}references-extended.png" alt="Autres organisations accompagnées par MIRS" loading="lazy">`);
+    panel.insertAdjacentHTML('beforeend', `<img src="${AS}future/references-extended.jpg" alt="Autres organisations accompagnées par MIRS" loading="lazy">`);
   });
 }
 
@@ -189,7 +222,7 @@ function shop(unit) {
 
 function projects() {
   const projects = [['Infrastructures qui tiennent le rythme', 'editorial/maintenance-pc.jpg'], ['Supports qui créent de la présence', 'editorial/impression-grand-format.jpg'], ['Compétences qui rendent autonome', 'editorial/formation-collaboration.jpg']];
-  return shell(`<section class="f-project-hero"><p class="f-overline">RÉALISATIONS MIRS</p><h1 data-reveal>${mark('DES PROJETS.<br>DU MOUVEMENT.')}</h1>${logoRail()}</section><section class="f-project-list">${projects.map(([title, image], index) => `<article><span>0${index + 1}</span><img src="${AS}${image}" alt="${title}" loading="lazy"><div><h2>${title}</h2>${button('/contact', 'Imaginer le vôtre', 'f-quiet')}</div></article>`).join('')}</section><section class="f-proofs f-proofs-tight"><div><p class="f-overline">RÉFÉRENCES OFFICIELLES</p><h2 data-reveal>${mark('LA CONFIANCE<br>SE VOIT.')}</h2></div><div class="f-logo-panels"><img src="${AS}references-institutions.png" alt="Institutions clientes MIRS" loading="lazy"><img src="${AS}references-enterprises.png" alt="Entreprises clientes MIRS" loading="lazy"></div></section>`, 'f-projects');
+  return shell(`<section class="f-project-hero"><p class="f-overline">RÉALISATIONS MIRS</p><h1 data-reveal>${mark('DES PROJETS.<br>DU MOUVEMENT.')}</h1>${logoRail()}</section><section class="f-project-list">${projects.map(([title, image], index) => `<article><span>0${index + 1}</span><img src="${AS}${image}" alt="${title}" loading="lazy"><div><h2>${title}</h2>${button('/contact', 'Imaginer le vôtre', 'f-quiet')}</div></article>`).join('')}</section><section class="f-proofs f-proofs-tight"><div><p class="f-overline">RÉFÉRENCES OFFICIELLES</p><h2 data-reveal>${mark('LA CONFIANCE<br>SE VOIT.')}</h2></div><div class="f-logo-panels"><img src="${AS}future/references-institutions.jpg" alt="Institutions clientes MIRS" loading="lazy"><img src="${AS}future/references-enterprises.jpg" alt="Entreprises clientes MIRS" loading="lazy"></div></section>`, 'f-projects');
 }
 
 function contact() {
@@ -247,11 +280,41 @@ function openCart() {
 function playVideo(file) {
   const dialog = document.createElement('dialog');
   dialog.className = 'f-film-dialog';
-  dialog.innerHTML = `<button type="button" aria-label="Fermer la vidéo">×</button><video controls autoplay playsinline preload="metadata"><source src="${AS}video/${file}" type="video/mp4"></video>`;
+  dialog.innerHTML = `<button type="button" aria-label="Fermer la vidéo">×</button><video controls autoplay playsinline preload="metadata" aria-label="Vidéo MIRS"><source src="${AS}video/${file}" type="video/mp4"></video><p class="f-film-load">Chargement du film…</p>`;
   document.body.append(dialog);
   dialog.showModal();
-  dialog.querySelector('button').addEventListener('click', () => dialog.remove());
-  dialog.addEventListener('cancel', () => dialog.remove());
+  const video = dialog.querySelector('video');
+  const loading = dialog.querySelector('.f-film-load');
+  let fallbackUrl = '';
+  let recovered = false;
+  const close = () => {
+    if (fallbackUrl) URL.revokeObjectURL(fallbackUrl);
+    dialog.remove();
+  };
+  video.addEventListener('canplay', () => loading.remove(), { once: true });
+  video.addEventListener('error', async () => {
+    if (recovered || !videoChunks[file]) {
+      loading.textContent = 'La vidéo est momentanément indisponible.';
+      return;
+    }
+    recovered = true;
+    loading.textContent = 'Préparation du film…';
+    try {
+      const pieces = await Promise.all(videoChunks[file].map(async (part) => {
+        const response = await fetch(`${AS}video-chunks/${part}`);
+        if (!response.ok) throw new Error('missing video chunk');
+        return response.arrayBuffer();
+      }));
+      fallbackUrl = URL.createObjectURL(new Blob(pieces, { type: 'video/mp4' }));
+      video.src = fallbackUrl;
+      video.load();
+      video.play().catch(() => {});
+    } catch {
+      loading.textContent = 'La vidéo est momentanément indisponible.';
+    }
+  }, { once: true });
+  dialog.querySelector('button').addEventListener('click', close);
+  dialog.addEventListener('cancel', close);
 }
 
 function bind() {
@@ -275,7 +338,13 @@ function bind() {
     }
   }, { signal }));
 
-  document.querySelector('[data-menu]')?.addEventListener('click', () => document.querySelector('[data-mobile-menu]')?.classList.toggle('is-open'), { signal });
+  document.querySelector('[data-menu]')?.addEventListener('click', (event) => {
+    const menu = document.querySelector('[data-mobile-menu]');
+    if (!menu) return;
+    const open = menu.classList.toggle('is-open');
+    menu.hidden = !open;
+    event.currentTarget.setAttribute('aria-expanded', String(open));
+  }, { signal });
   document.querySelector('[data-theme]')?.addEventListener('click', () => {
     state.theme = state.theme === 'dark' ? 'light' : 'dark';
     localStorage.setItem('mirs-future-theme', state.theme);
@@ -375,6 +444,7 @@ function initTrail(signal) {
   const points = [];
   let width = 0;
   let height = 0;
+  let frame = 0;
   const resize = () => {
     const ratio = Math.min(devicePixelRatio || 1, 2);
     width = innerWidth; height = innerHeight;
@@ -399,11 +469,16 @@ function initTrail(signal) {
       context.stroke();
     }
     while (points.length && points[0].life <= 0) points.shift();
-    requestAnimationFrame(draw);
+    frame = requestAnimationFrame(draw);
   };
-  resize(); draw();
+  resize();
+  frame = requestAnimationFrame(draw);
   addEventListener('resize', resize, { signal });
   addEventListener('pointermove', move, { passive: true, signal });
+  signal.addEventListener('abort', () => {
+    cancelAnimationFrame(frame);
+    context.clearRect(0, 0, width, height);
+  }, { once: true });
 }
 
 addEventListener('popstate', () => route());
