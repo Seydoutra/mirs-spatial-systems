@@ -286,9 +286,11 @@ function openCart() {
 }
 
 function playVideo(file) {
+  const chunks = videoChunks[file];
+  const useChunkDelivery = location.hostname.endsWith('.github.io') && chunks;
   const dialog = document.createElement('dialog');
   dialog.className = 'f-film-dialog';
-  dialog.innerHTML = `<button type="button" aria-label="Fermer la vidéo">×</button><video controls autoplay playsinline preload="metadata" aria-label="Vidéo MIRS"><source src="${AS}video/${file}" type="video/mp4"></video><p class="f-film-load">Chargement du film…</p>`;
+  dialog.innerHTML = `<button type="button" aria-label="Fermer la vidéo">×</button><video controls autoplay playsinline preload="metadata" aria-label="Vidéo MIRS">${useChunkDelivery ? '' : `<source src="${AS}video/${file}" type="video/mp4">`}</video><p class="f-film-load">Chargement du film…</p>`;
   document.body.append(dialog);
   dialog.showModal();
   const video = dialog.querySelector('video');
@@ -300,15 +302,15 @@ function playVideo(file) {
     dialog.remove();
   };
   video.addEventListener('canplay', () => loading.remove(), { once: true });
-  video.addEventListener('error', async () => {
-    if (recovered || !videoChunks[file]) {
+  const recover = async () => {
+    if (recovered || !chunks) {
       loading.textContent = 'La vidéo est momentanément indisponible.';
       return;
     }
     recovered = true;
     loading.textContent = 'Préparation du film…';
     try {
-      const pieces = await Promise.all(videoChunks[file].map(async (part) => {
+      const pieces = await Promise.all(chunks.map(async (part) => {
         const response = await fetch(`${AS}video-chunks/${part}`);
         if (!response.ok) throw new Error('missing video chunk');
         return response.arrayBuffer();
@@ -320,7 +322,9 @@ function playVideo(file) {
     } catch {
       loading.textContent = 'La vidéo est momentanément indisponible.';
     }
-  }, { once: true });
+  };
+  if (useChunkDelivery) void recover();
+  else video.addEventListener('error', recover, { once: true });
   dialog.querySelector('button').addEventListener('click', close);
   dialog.addEventListener('cancel', close);
 }
