@@ -21,6 +21,11 @@ jobs:
       - uses: actions/checkout@v6
       - id: pages
         uses: actions/configure-pages@v5
+      - name: Reconstruct on-demand films
+        run: |
+          mkdir -p dist/assets/video
+          cat dist/assets/video-chunks/technology-flow-* > dist/assets/video/technology-flow.mp4
+          cat dist/assets/video-chunks/imprimerie-presentation-* > dist/assets/video/imprimerie-presentation.mp4
       - uses: actions/upload-pages-artifact@v4
         with:
           path: ./dist

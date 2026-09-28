@@ -287,10 +287,9 @@ function openCart() {
 
 function playVideo(file) {
   const chunks = videoChunks[file];
-  const useChunkDelivery = location.hostname.endsWith('.github.io') && chunks;
   const dialog = document.createElement('dialog');
   dialog.className = 'f-film-dialog';
-  dialog.innerHTML = `<button type="button" aria-label="Fermer la vidéo">×</button><video controls autoplay playsinline preload="metadata" aria-label="Vidéo MIRS">${useChunkDelivery ? '' : `<source src="${AS}video/${file}" type="video/mp4">`}</video><p class="f-film-load">Chargement du film…</p>`;
+  dialog.innerHTML = `<button type="button" aria-label="Fermer la vidéo">×</button><video controls autoplay playsinline preload="metadata" aria-label="Vidéo MIRS"><source src="${AS}video/${file}" type="video/mp4"></video><p class="f-film-load">Chargement du film…</p>`;
   document.body.append(dialog);
   dialog.showModal();
   const video = dialog.querySelector('video');
@@ -323,8 +322,7 @@ function playVideo(file) {
       loading.textContent = 'La vidéo est momentanément indisponible.';
     }
   };
-  if (useChunkDelivery) void recover();
-  else video.addEventListener('error', recover, { once: true });
+  video.addEventListener('error', recover, { once: true });
   dialog.querySelector('button').addEventListener('click', close);
   dialog.addEventListener('cancel', close);
 }
