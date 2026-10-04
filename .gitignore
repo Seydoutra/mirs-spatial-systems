@@ -9,6 +9,7 @@ dist/*
 !dist/.nojekyll
 !dist/_redirects
 !dist/favicon.svg
+!dist/mirs-unified.css
 !dist/mirs-future.css
 !dist/mirs-future.js
 !dist/assets/

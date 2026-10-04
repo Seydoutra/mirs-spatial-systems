@@ -68,12 +68,12 @@ const videoChunks = {
 let routeAbort = null;
 
 const link = (href, label, className = 'site-link') =>
-  `<a href="${href}" data-link class="${className}"><span>${label}</span><i aria-hidden="true">↗</i></a>`;
+  `<a href="${href}" data-link class="${className}"><span>${label}</span></a>`;
 
 const button = (href, label, className = '') => link(href, label, `button-link ${className}`.trim());
 
 const anchor = (id, label, className = 'site-link') =>
-  `<a href="#${id}" data-anchor="${id}" class="${className}"><span>${label}</span><i aria-hidden="true">↓</i></a>`;
+  `<a href="#${id}" data-anchor="${id}" class="${className}"><span>${label}</span></a>`;
 
 const title = (content, tag = 'h2') => `<${tag} class="display-title" data-reveal>${content}</${tag}>`;
 
@@ -90,7 +90,7 @@ function logoBands(compact = false) {
 
 function header() {
   return `<header class="site-header">
-    <a href="/" data-link class="brand" aria-label="MIRS — accueil"><img src="${AS}mirs-logo.png" alt=""><span><b>MIRS</b><small>SPATIAL SYSTEMS</small></span></a>
+    <a href="/" data-link class="brand" aria-label="MIRS — accueil"><img src="${AS}mirs-logo.png" alt=""><span><b>MIRS</b><small>INFORMATIQUE · IMPRIMERIE · ACADEMY</small></span></a>
     <nav class="desktop-nav" aria-label="Navigation principale">
       <a href="#univers" data-anchor="univers">Univers</a>
       <a href="#references" data-anchor="references">Références</a>
@@ -107,6 +107,7 @@ function header() {
   <aside class="mobile-navigation" id="mobile-navigation" data-mobile-menu hidden>
     <a href="#univers" data-anchor="univers">Nos univers <i>↓</i></a>
     <a href="#references" data-anchor="references">Nos références <i>↓</i></a>
+    ${link('/informatique', 'Informatique')}${link('/imprimerie', 'Imprimerie')}${link('/imprimerie/boutique', 'Boutique')}
     ${link('/realisations', 'Réalisations')}
     ${link('/formation', 'MIRS Academy')}
     ${link('/contact', 'Démarrer un projet', 'button-link primary')}
@@ -115,7 +116,7 @@ function header() {
 
 function footer() {
   return `<footer class="site-footer">
-    <div class="footer-intro"><a href="/" data-link class="brand"><img src="${AS}mirs-logo.png" alt=""><span><b>MIRS</b><small>SPATIAL SYSTEMS</small></span></a><p>Informatique, production et transmission pour les organisations qui veulent avancer.</p></div>
+    <div class="footer-intro"><a href="/" data-link class="brand"><img src="${AS}mirs-logo.png" alt=""><span><b>MIRS</b><small>INFORMATIQUE · IMPRIMERIE · ACADEMY</small></span></a><p>Informatique, production et transmission pour les organisations qui veulent avancer.</p></div>
     <div class="footer-list"><span>Conakry · Guinée</span><a href="tel:+224622051321">+224 622 05 13 21</a><a href="https://wa.me/224622051321" target="_blank" rel="noreferrer">WhatsApp ↗</a></div>
     <div class="footer-list"><span>Parcours</span>${link('/informatique', 'Informatique')}${link('/imprimerie', 'Imprimerie')}${link('/formation', 'MIRS Academy')}</div>
     <small class="footer-mark">© MIRS SARL · Modernité · Innovation · Réseau · Service</small>
@@ -123,7 +124,7 @@ function footer() {
 }
 
 function shell(content, page = '') {
-  return `${header()}<main class="site-main ${page}">${content}</main>${footer()}
+  return `<a class="skip-link" href="#main-content">Aller au contenu</a>${header()}<main id="main-content" tabindex="-1" class="site-main ${page}">${content}</main>${footer()}
     <div class="toast" data-toast role="status"></div>
     <dialog class="project-dialog" data-cart-dialog><button type="button" data-close aria-label="Fermer">×</button><p class="eyebrow">VOTRE PROJET</p><h2>Votre sélection.</h2><div data-cart-lines></div>${button('/checkout', 'Envoyer la demande', 'primary')}<small>Un conseiller MIRS vérifie les détails avant toute commande.</small></dialog>`;
 }
@@ -136,57 +137,27 @@ function projectCard({ index, name, tag, copy, href, image, tone }) {
 }
 
 function home() {
+  const chapters = [
+    { number: '01', name: 'Informatique', word: 'Connecter.', tag: 'DES SYSTÈMES QUI VOUS PORTENT', copy: 'Des équipements aux réseaux, une infrastructure pensée pour celles et ceux qui l’utilisent.', detail: 'Réseaux · Équipements · Cybersécurité · Maintenance', image: 'future/informatique-team.jpg', href: '/informatique', tone: 'blue' },
+    { number: '02', name: 'Imprimerie', word: 'Faire exister.', tag: 'DE L’IDÉE À LA MATIÈRE', copy: 'Le bon support, la bonne finition, le bon impact. Votre identité prend place dans le monde réel.', detail: 'Grand format · Édition · Signalétique · Personnalisation', image: 'future/imprimerie-team.jpg', href: '/imprimerie', tone: 'pink' },
+    { number: '03', name: 'Academy', word: 'Transmettre.', tag: 'LA COMPÉTENCE EN ACTION', copy: 'Apprendre un outil. Comprendre une méthode. Repartir avec une compétence qui sert dès demain.', detail: 'AMADEUS · Réseaux · Bureautique · Marketing digital', image: 'editorial/formation-collaboration.jpg', href: '/formation', tone: 'green' },
+  ];
   return shell(`
-    <section class="home-hero">
-      <div class="hero-grain"></div><div class="hero-grid"></div><div class="hero-orbit orbit-one"></div><div class="hero-orbit orbit-two"></div>
-      <div class="hero-meta"><span>MIRS / CONAKRY</span><span>DEPUIS 2006</span><span>09° 31' N · 13° 42' W</span></div>
-      <div class="hero-copy"><p class="eyebrow">DES SOLUTIONS QUI PRENNENT PLACE.</p>${title('On rend<br>le travail<br><em>possible.</em>', 'h1')}<p class="hero-intro">MIRS aide les organisations à faire circuler l’information, produire des supports qui comptent et développer les compétences qui durent.</p><div class="hero-cta">${button('/contact', 'Lancer un projet', 'primary')}${anchor('univers', 'Choisir un univers', 'button-link quiet')}</div></div>
-      <div class="hero-object" aria-hidden="true"><div class="object-halo"></div><div class="object-plane plane-a"></div><div class="object-plane plane-b"></div><div class="object-plane plane-c"></div><div class="object-core"><span>M</span></div><span class="object-label">MIRS<br>OPERATING<br>FIELD</span></div>
-      <div class="hero-foot"><span>INFORMATIQUE</span><i></i><span>IMPRIMERIE</span><i></i><span>ACADEMY</span><b>SCROLL ↓</b></div>
+    <section class="editorial-hero">
+      <div class="hero-topline"><span>CONAKRY, GUINÉE</span><span>INFORMATIQUE / IMPRIMERIE / ACADEMY</span><span>DEPUIS 2006</span></div>
+      <div class="editorial-hero-heading"><p class="eyebrow">LA SUITE SE CONSTRUIT ENSEMBLE.</p><h1>Le travail avance.<br><span>Vous aussi.</span></h1></div>
+      <div class="hero-media" data-depth><img src="${AS}future/informatique-team.jpg" alt="Des professionnels collaborent autour d’un poste informatique" fetchpriority="high"><div class="media-caption"><span>01 / L’ÉNERGIE DU COLLECTIF</span><button type="button" data-video="technology-flow.mp4"><span class="play-icon">▶</span> Voir le film MIRS</button></div></div>
+      <div class="hero-bottomline"><p>Connecter les équipes. Donner forme aux idées.<br>Faire grandir les compétences.</p><div>${button('/contact', 'Parlons de votre projet', 'primary')}${anchor('univers', 'Découvrir MIRS', 'hero-discover')}</div></div>
+      <span class="hero-outline" aria-hidden="true">MIRS</span>
     </section>
-
-    <section class="universe-intro" id="univers">
-      <div class="section-kicker"><span>01</span><p>CHOISISSEZ VOTRE TRAJECTOIRE</p></div>
-      <div class="universe-head">${title('Trois expertises.<br>Une même <em>impulsion.</em>')}<p>Chaque pôle MIRS se pense comme un atelier : clair, opérationnel et conçu pour vous faire passer à l’étape suivante.</p></div>
-      <div class="universe-grid">
-        ${projectCard({ index: 1, name: 'Informatique', tag: 'SYSTÈMES & INFRASTRUCTURES', copy: 'Réseaux, postes, sécurité, support.', href: '/informatique', image: 'future/informatique-team.jpg', tone: 'tech' })}
-        ${projectCard({ index: 2, name: 'Imprimerie', tag: 'IMAGES & PRODUCTION', copy: 'Supports, grand format, objets, digital.', href: '/imprimerie', image: 'future/imprimerie-team.jpg', tone: 'print' })}
-        ${projectCard({ index: 3, name: 'MIRS Academy', tag: 'FORMATION & PRATIQUE', copy: 'Des capacités directement actionnables.', href: '/formation', image: 'editorial/formation-collaboration.jpg', tone: 'learn' })}
-      </div>
+    <section class="manifesto"><p class="eyebrow">UNE ENTREPRISE. TROIS FAÇONS D’AVANCER.</p><div><h2 data-reveal>La technologie relie.<br>La création révèle.<br><em>La formation transforme.</em></h2><p>Depuis 2006, MIRS accompagne les organisations en Guinée. Nous réunissons les outils, les supports et les compétences pour faire passer vos projets à l’action.</p></div><span class="manifesto-mark" aria-hidden="true">M.</span></section>
+    <section class="chapter-section" id="univers"><div class="chapter-heading"><span class="eyebrow">NOS UNIVERS</span><span>CHOISISSEZ VOTRE POINT DE DÉPART</span></div>
+      ${chapters.map(c => `<article class="chapter chapter-${c.tone}" data-chapter><div class="chapter-info"><div class="chapter-label"><span>${c.number} / ${c.name}</span><span>MIRS</span></div><p class="eyebrow">${c.tag}</p><h2 data-reveal>${c.word}</h2><p class="chapter-copy">${c.copy}</p><p class="chapter-details">${c.detail}</p>${button(c.href, 'Explorer ' + c.name, 'primary')}</div><a class="chapter-media" href="${c.href}" data-link data-depth><img src="${AS}${c.image}" alt="" loading="lazy"><span class="chapter-media-label">${c.name}<span>${c.number}</span></span></a><div class="chapter-progress" aria-hidden="true"></div></article>`).join('')}
     </section>
-
-    <section class="split-statement tech-statement">
-      <div class="statement-copy"><p class="eyebrow">MIRS INFORMATIQUE / 01</p>${title('Une infrastructure<br>qui ne ralentit<br><em>personne.</em>')}<p>De la première étude au suivi quotidien, les outils sont mis en ordre autour de votre activité.</p>${button('/informatique', 'Voir l’univers informatique', 'text-button')}</div>
-      <div class="system-sculpture computer-sculpture" data-build><div class="sculpture-aura"></div><i class="screen"><b>MIRS<br>READY</b></i><i class="screen-glow"></i><i class="machine-base"></i><i class="machine-chip"></i><span>BUILD / AS YOU SCROLL</span></div>
-    </section>
-
-    <section class="film-strip"><button type="button" class="film-shot" data-video="technology-flow.mp4"><img src="${AS}editorial/developpement-web.jpg" alt="Technologie MIRS" loading="lazy"><span>FILM / 01</span><i>▶</i></button><div class="film-note"><p class="eyebrow">REGARDER, PAS DEVINER.</p><h2>Un système se voit aussi en mouvement.</h2>${button('/informatique', 'Entrer dans les solutions', 'button-link quiet')}</div></section>
-
-    <section class="print-signal">
-      <div class="print-signal-top"><p class="eyebrow">MIRS IMPRIMERIE / 02</p>${title('L’idée sort<br>du cadre.<br><em>Pour de vrai.</em>')}<div>${button('/imprimerie', 'Créer un support', 'primary')}${button('/imprimerie/boutique', 'Voir la boutique', 'quiet button-link')}</div></div>
-      <div class="printer-room"><div class="paper-sheet sheet-one"></div><div class="paper-sheet sheet-two"></div><div class="paper-sheet sheet-three"></div><div class="print-machine"><i></i><b></b><em>MAKE<br>IT<br>REAL</em></div><span>CMYK / MIRS / PRODUCTION</span></div>
-    </section>
-
-    <section class="reference-field" id="references">
-      <div class="reference-head"><div><p class="eyebrow">81 CLIENTS. UNE RELATION DE CONFIANCE.</p>${title('Leur identité<br>dans notre<br><em>mouvement.</em>')}</div><p>Institutions, entreprises, PME et organisations : les logos qui défilent ici sont les véritables références fournies à MIRS.</p></div>
-      ${logoBands()}
-      <div class="reference-foot"><span>FAITES GLISSER LE CURSEUR. LES RUBANS S’ARRÊTENT.</span>${button('/realisations', 'Voir quelques réalisations', 'text-button')}</div>
-    </section>
-
-    <section class="case-grid">
-      <div class="case-intro"><p class="eyebrow">DES INTERVENTIONS QUI LAISSENT UNE TRACE.</p>${title('L’action, c’est<br>notre meilleure<br><em>preuve.</em>')}<p>Trois façons de prendre le relais quand une organisation a besoin d’avancer.</p></div>
-      <article class="case-card"><span>01 / CONNECTER</span><img src="${AS}editorial/maintenance-pc.jpg" alt="" loading="lazy"><h3>Remettre le système au centre du travail.</h3><a href="/informatique" data-link>Informatique ↗</a></article>
-      <article class="case-card offset"><span>02 / RENDRE VISIBLE</span><img src="${AS}editorial/impression-grand-format.jpg" alt="" loading="lazy"><h3>Faire exister une marque, dans l’espace et dans la main.</h3><a href="/imprimerie" data-link>Imprimerie ↗</a></article>
-      <article class="case-card"><span>03 / TRANSMETTRE</span><img src="${AS}editorial/formation-collaboration.jpg" alt="" loading="lazy"><h3>Faire de la compétence un levier immédiat.</h3><a href="/formation" data-link>Academy ↗</a></article>
-    </section>
-
-    <section class="academy-pulse">
-      <div class="academy-stamp" aria-hidden="true"><span>LEARN</span><b>×</b><span>DO</span></div>
-      <div><p class="eyebrow">MIRS ACADEMY / 03</p>${title('Apprendre<br>en faisant,<br><em>maintenant.</em>')}<p>Des sessions accessibles, centrées sur des situations concrètes et le plaisir d’être capable.</p>${button('/formation', 'Explorer les formations', 'primary')}</div>
-      <div class="academy-list">${courses.slice(0, 4).map(([name, detail], index) => `<a href="/formation" data-link><b>0${index + 1}</b><span>${name}<small>${detail}</small></span><i>↗</i></a>`).join('')}</div>
-    </section>
-
-    <section class="final-block"><div class="final-glow"></div><p class="eyebrow">LA PROCHAINE ÉTAPE PEUT COMMENCER ICI.</p>${title('Faisons de la<br>place à votre<br><em>projet.</em>')}<div>${button('/contact', 'Parler à l’équipe MIRS', 'primary')}${button('/realisations', 'Voir le champ d’action', 'quiet button-link')}</div></section>
+    <section class="reference-field unified-references" id="references"><div class="reference-head"><div><p class="eyebrow">LES RELATIONS FONT LA DIFFÉRENCE.</p>${title('La confiance,<br><em>ça se construit.</em>')}</div><p>Institutions, entreprises et organisations : découvrez les références de MIRS.</p></div>${logoBands()}<div class="reference-foot"><span>81 RÉFÉRENCES / UN ENGAGEMENT COMMUN</span>${button('/realisations', 'Découvrir nos réalisations', 'text-button')}</div></section>
+    <section class="production-feature"><div class="production-head"><p class="eyebrow">MIRS IMPRIMERIE / DU FICHIER À LA FINITION</p><h2 data-reveal>Les idées méritent<br><em>de sortir de l’écran.</em></h2></div><button class="production-film" type="button" data-video="imprimerie-presentation.mp4"><img src="${AS}editorial/impression-grand-format.jpg" alt="Impression grand format en couleurs" loading="lazy"><span><b class="play-icon">▶</b> Dans les coulisses de la production</span></button><div class="production-foot"><p>Grand format ou petit détail.<br>La même attention à chaque support.</p>${button('/imprimerie/boutique', 'Choisir votre support', 'primary')}</div></section>
+    <section class="academy-spotlight"><div><p class="eyebrow">MIRS ACADEMY</p>${title('Le prochain<br>niveau, c’est <em>vous.</em>')}<p>Des formations centrées sur des situations concrètes, pour développer des compétences directement utilisables.</p>${button('/formation', 'Explorer les formations', 'primary')}</div><div class="academy-list">${courses.map(([name, detail], i) => `<a href="/formation" data-link><b>0${i+1}</b><span>${name}<small>${detail}</small></span><span class="course-plus" aria-hidden="true">+</span></a>`).join('')}</div></section>
+    <section class="unified-final"><p class="eyebrow">UNE IDÉE, UN BESOIN, UNE AMBITION ?</p><h2 data-reveal>Faisons<br><em>la suite.</em></h2><div>${button('/contact', 'Démarrer un projet', 'primary')}<span>À CONAKRY. À VOS CÔTÉS.</span></div></section>
   `, 'home-page');
 }
 
@@ -223,7 +194,7 @@ function branch(unit) {
 
 function training() {
   return shell(`
-    <section class="academy-hero"><div class="academy-lines"></div><div class="academy-hero-copy"><p class="eyebrow">MIRS ACADEMY / 03</p>${title('On apprend<br>mieux quand<br>on <em>agit.</em>', 'h1')}<p>La formation MIRS est une zone de pratique : on essaye, on comprend et on repart capable.</p>${button('/contact', 'Demander une session', 'primary')}</div><div class="academy-dial"><span>SKILL</span><b>01</b><i>PRATIQUE<br>AVANT<br>THÉORIE</i></div></section>
+    <section class="academy-hero"><div class="academy-lines"></div><div class="academy-hero-copy"><p class="eyebrow">MIRS ACADEMY / 03</p>${title('On apprend<br>mieux quand<br>on <em>agit.</em>', 'h1')}<p>La formation MIRS est une zone de pratique : on essaye, on comprend et on repart capable.</p>${button('/contact', 'Demander une session', 'primary')}</div><figure class="academy-portrait" data-depth><img src="${AS}editorial/formation-collaboration.jpg" alt="Apprentissage en collaboration"><figcaption>LA PRATIQUE CHANGE TOUT.</figcaption></figure></section>
     <section class="course-section"><div class="section-kicker"><span>01</span><p>MODULES À EXPLORER</p></div>${title('Choisir la compétence<br>qui déplace votre <em>quotidien.</em>')}<div class="course-list">${courses.map(([name, detail], index) => `<article><span>0${index + 1}</span><h3>${name}</h3><p>${detail}</p><a href="/contact" data-link>Demander une session ↗</a></article>`).join('')}</div></section>
     <section class="academy-process"><div><p class="eyebrow">LE FORMAT MIRS</p>${title('Observer.<br>Pratiquer.<br><em>Réutiliser.</em>')}</div><div class="process-path"><article><b>01</b><h3>Un contexte</h3><p>On part du besoin et du niveau du groupe.</p></article><article><b>02</b><h3>Un atelier</h3><p>La théorie devient un geste, un outil, un projet.</p></article><article><b>03</b><h3>Une suite</h3><p>Les acquis servent dès le retour au travail.</p></article></div></section>
     <section class="final-block academy-final"><p class="eyebrow">UNE COMPÉTENCE PEUT CHANGER LA SUITE.</p>${title('Entrons dans<br>le <em>faire.</em>')}${button('/contact', 'Planifier une formation', 'primary')}</section>
@@ -238,8 +209,8 @@ function shop(unit) {
   const type = unit === 'informatique' ? 'tech' : 'print';
   const copy = type === 'tech' ? ['Équiper le travail.', 'Postes, réseau, sécurité : sélectionnez un point de départ et recevons votre demande comme un vrai projet.'] : ['Rendre l’idée visible.', 'Choisissez votre support. MIRS vous accompagne ensuite sur les dimensions, la personnalisation et la production.'];
   return shell(`
-    <section class="store-hero store-${type}"><div><p class="eyebrow">BOUTIQUE MIRS / ${type === 'tech' ? 'INFORMATIQUE' : 'IMPRIMERIE'}</p>${title(copy[0], 'h1')}<p>${copy[1]}</p></div><div class="store-token"><span>${type === 'tech' ? 'TECH' : 'PRINT'}</span><i></i><b>+<br>+</b></div></section>
-    <section class="catalogue"><div class="catalogue-top"><p class="eyebrow">SÉLECTION MIRS</p><label><span class="sr-only">Rechercher un produit</span><input data-filter placeholder="Rechercher" aria-label="Rechercher un produit"></label></div><div class="catalogue-grid">${[...products[type], ...products[type]].map((product) => productCard(type, product)).join('')}</div></section>
+    <section class="store-hero store-${type}"><div><p class="eyebrow">BOUTIQUE MIRS / ${type === 'tech' ? 'INFORMATIQUE' : 'IMPRIMERIE'}</p>${title(copy[0], 'h1')}<p>${copy[1]}</p></div><div class="store-photo"><img src="${AS}${type === 'tech' ? 'editorial/equipement-clavier.jpg' : 'future/imprimerie-team.jpg'}" alt="" fetchpriority="high"></div></section>
+    <section class="catalogue"><div class="catalogue-top"><p class="eyebrow">SÉLECTION MIRS</p><label><span class="sr-only">Rechercher un produit</span><input data-filter placeholder="Rechercher" aria-label="Rechercher un produit"></label></div><div class="catalogue-grid">${products[type].map((product) => productCard(type, product)).join('')}</div></section>
   `, `store-page store-${type}`);
 }
 
@@ -259,15 +230,15 @@ function projects() {
 
 function contact() {
   return shell(`
-    <section class="contact-page"><div class="contact-intro"><p class="eyebrow">LE PREMIER ÉCHANGE COMPTE.</p>${title('On regarde<br>ce qu’il faut<br>faire <em>avancer.</em>', 'h1')}<p>Conakry, Guinée<br><a href="tel:+224622051321">+224 622 05 13 21</a></p><a class="whatsapp-link" href="https://wa.me/224622051321" target="_blank" rel="noreferrer">Écrire sur WhatsApp ↗</a></div><form class="contact-form" data-contact><label>Nom ou entreprise<input required name="name" placeholder="Votre nom"></label><label>Téléphone<input required name="phone" placeholder="Votre téléphone"></label><label>Votre besoin<select name="need"><option>Informatique</option><option>Imprimerie</option><option>Formation</option><option>Autre projet</option></select></label><label>Quelques lignes<textarea name="project" placeholder="Ce que vous voulez faire avancer."></textarea></label><button class="button-link primary">Envoyer la demande <i>↗</i></button><p data-form-note></p></form></section>
-  `, 'contact-page');
+    <section class="contact-page"><div class="contact-intro"><p class="eyebrow">LE PREMIER ÉCHANGE COMPTE.</p>${title('On regarde<br>ce qu’il faut<br>faire <em>avancer.</em>', 'h1')}<p>Conakry, Guinée<br><a href="tel:+224622051321">+224 622 05 13 21</a></p><a class="whatsapp-link" href="https://wa.me/224622051321" target="_blank" rel="noreferrer">Écrire sur WhatsApp ↗</a></div><form class="contact-form" data-contact><label>Nom ou entreprise<input required name="name" placeholder="Votre nom"></label><label>Téléphone<input required name="phone" type="tel" autocomplete="tel" placeholder="Votre téléphone"></label><label>Votre besoin<select name="need"><option>Informatique</option><option>Imprimerie</option><option>Formation</option><option>Autre projet</option></select></label><label>Quelques lignes<textarea name="project" placeholder="Ce que vous voulez faire avancer."></textarea></label><button class="button-link primary">Préparer sur WhatsApp</button><p data-form-note>Votre message sera préparé dans WhatsApp. Vous pourrez le vérifier avant de l’envoyer.</p></form></section>
+  `, 'contact-route');
 }
 
 function checkout() {
   const lines = state.cart.length ? state.cart.map((item) => `<li>${item}<button type="button" data-remove="${item}" aria-label="Retirer ${item}">×</button></li>`).join('') : '<li>Votre sélection est vide. Explorez l’une des boutiques MIRS.</li>';
   return shell(`
-    <section class="checkout-page"><div><p class="eyebrow">VOTRE PROJET MIRS</p>${title('On organise<br>la <em>suite.</em>', 'h1')}<ul data-checkout-lines>${lines}</ul></div><form class="contact-form" data-contact><label>Nom ou entreprise<input required placeholder="Votre nom"></label><label>Téléphone<input required placeholder="Votre téléphone"></label><label>Email<input type="email" placeholder="Votre email"></label><label>Précisions<textarea placeholder="Quantité, délai, informations utiles…"></textarea></label><button class="button-link primary">Envoyer ma demande <i>↗</i></button><p data-form-note></p></form></section>
-  `, 'checkout-page');
+    <section class="checkout-page"><div><p class="eyebrow">VOTRE PROJET MIRS</p>${title('On organise<br>la <em>suite.</em>', 'h1')}<ul data-checkout-lines>${lines}</ul></div><form class="contact-form" data-contact><label>Nom ou entreprise<input required name="name" autocomplete="name" placeholder="Votre nom"></label><label>Téléphone<input required name="phone" type="tel" autocomplete="tel" placeholder="Votre téléphone"></label><label>Email<input name="email" type="email" autocomplete="email" placeholder="Votre email"></label><label>Précisions<textarea name="project" placeholder="Quantité, délai, informations utiles…"></textarea></label><button class="button-link primary">Préparer sur WhatsApp</button><p data-form-note>Votre message sera préparé dans WhatsApp. Vous pourrez le vérifier avant de l’envoyer.</p></form></section>
+  `, 'checkout-route');
 }
 
 function renderRoute(path = location.pathname, options = {}) {
@@ -285,7 +256,7 @@ function renderRoute(path = location.pathname, options = {}) {
   document.documentElement.dataset.theme = state.theme;
   document.title = clean === '/' ? 'MIRS — Faire avancer le travail' : `MIRS — ${clean.split('/').pop().replaceAll('-', ' ')}`;
   bind();
-  if (!options.preserveScroll) scrollTo(0, 0);
+  if (!options.preserveScroll) scrollTo({ top: 0, left: 0, behavior: 'instant' });
 }
 
 function persistCart() {
@@ -356,7 +327,7 @@ function playVideo(file) {
 
 function showAnchor(id) {
   const target = document.getElementById(id);
-  if (target) target.scrollIntoView({ behavior: 'smooth', block: 'start' });
+  if (target) target.scrollIntoView({ behavior: matchMedia('(prefers-reduced-motion: reduce)').matches ? 'instant' : 'smooth', block: 'start' });
 }
 
 function bind() {
@@ -369,6 +340,7 @@ function bind() {
   document.querySelectorAll('[data-link]').forEach((item) => item.addEventListener('click', (event) => {
     const url = new URL(item.href);
     if (url.origin !== location.origin) return;
+    if (event.metaKey || event.ctrlKey || event.shiftKey || event.altKey || event.button !== 0) return;
     event.preventDefault();
     history.pushState({}, '', url.pathname);
     renderRoute(url.pathname);
@@ -412,15 +384,17 @@ function bind() {
     flash(`${item.dataset.add} a été ajouté à votre projet.`);
   }, { signal }));
 
-  document.querySelectorAll('[data-remove]').forEach((item) => item.addEventListener('click', () => {
+  document.getElementById('app').addEventListener('click', (event) => {
+    const item = event.target.closest('[data-remove]');
+    if (!item) return;
     const index = state.cart.indexOf(item.dataset.remove);
     if (index > -1) state.cart.splice(index, 1);
     persistCart();
     const count = document.querySelector('[data-cart] b');
     if (count) count.textContent = state.cart.length;
     renderCart();
-    if (document.querySelector('[data-checkout-lines]')) renderRoute('/checkout');
-  }, { signal }));
+    if (document.querySelector('[data-checkout-lines]')) renderRoute(pageHref('/checkout'));
+  }, { signal });
 
   document.querySelector('[data-filter]')?.addEventListener('input', (event) => {
     const query = event.target.value.trim().toLowerCase();
@@ -430,9 +404,20 @@ function bind() {
   document.querySelector('[data-contact]')?.addEventListener('submit', (event) => {
     event.preventDefault();
     const note = event.currentTarget.querySelector('[data-form-note]');
-    if (note) note.textContent = 'Merci. Votre demande est prête pour l’équipe MIRS.';
+    const data = new FormData(event.currentTarget);
+    const message = ['Bonjour MIRS,', `Nom / entreprise : ${data.get('name') || ''}`, `Téléphone : ${data.get('phone') || ''}`, data.get('email') ? `Email : ${data.get('email')}` : '', data.get('need') ? `Besoin : ${data.get('need')}` : '', state.cart.length ? `Sélection : ${state.cart.join(', ')}` : '', `Projet : ${data.get('project') || ''}`].filter(Boolean).join('\n');
+    const href = `https://wa.me/224622051321?text=${encodeURIComponent(message)}`;
+    if (note) {
+      note.textContent = 'Votre message est prêt. ';
+      const send = document.createElement('a'); send.href = href; send.target = '_blank'; send.rel = 'noopener noreferrer'; send.textContent = 'Ouvrir WhatsApp pour vérifier et envoyer'; note.append(send);
+    }
   }, { signal });
 
+  document.querySelectorAll('a[href]').forEach(a => {
+    if (a.origin === location.origin && a.pathname === location.pathname && a.hasAttribute('data-link')) a.setAttribute('aria-current', 'page');
+  });
+  document.querySelectorAll('.site-link i, .button-link i').forEach(i => i.remove());
+  initEditorialMotion(signal);
   initMotion(signal);
   initTilt(signal);
 }
@@ -484,6 +469,32 @@ function initTilt(signal) {
       item.style.removeProperty('--tilt-y');
     }, { signal });
   });
+}
+
+function initEditorialMotion(signal) {
+  const reduced = matchMedia('(prefers-reduced-motion: reduce)').matches;
+  const chapters = [...document.querySelectorAll('[data-chapter]')];
+  const media = [...document.querySelectorAll('[data-depth]')];
+  let frame = 0;
+  const update = () => {
+    frame = 0;
+    document.querySelector('.site-header')?.classList.toggle('has-scrolled', scrollY > 30);
+    if (reduced) return;
+    chapters.forEach(chapter => {
+      const rect = chapter.getBoundingClientRect();
+      const progress = Math.max(0, Math.min(1, (innerHeight - rect.top) / (innerHeight + rect.height)));
+      chapter.style.setProperty('--chapter-progress', progress);
+    });
+    if (innerWidth >= 900) media.forEach(item => {
+      const rect = item.getBoundingClientRect();
+      if (rect.bottom > 0 && rect.top < innerHeight) item.style.setProperty('--media-shift', `${Math.max(-24, Math.min(24, (innerHeight/2 - rect.top - rect.height/2) * .055))}px`);
+    });
+  };
+  const queue = () => { if (!frame) frame = requestAnimationFrame(update); };
+  addEventListener('scroll', queue, { passive: true, signal });
+  addEventListener('resize', queue, { passive: true, signal });
+  signal.addEventListener('abort', () => { if (frame) cancelAnimationFrame(frame); }, { once: true });
+  update();
 }
 
 addEventListener('popstate', () => renderRoute(location.pathname));
