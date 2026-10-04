@@ -117,13 +117,7 @@ function brandMark() {
   return `<span class="brand-mark" aria-hidden="true"><img class="brand-logo brand-logo--color" src="${AS}mirs-logo.png" alt=""><img class="brand-logo brand-logo--white" src="${AS}mirs-media/mirs-logo-white-transparent.png" alt=""></span>`;
 }
 
-function universeCards() {
-  return universes.map((item) => `<article class="universe-card universe-card--${item.className}" data-tilt>
-    <img src="${AS}${item.image}" alt="${local(item.name)} — MIRS" loading="lazy">
-    <div class="universe-card__veil"></div><span class="card-index">${item.index} / ${item.signal}</span>
-    <div class="universe-card__content"><span class="card-kicker">${local(item.name)}</span><h3>${local(item.title)}</h3><p>${local(item.detail)}</p>${button(item.path, tr('Découvrir', 'Discover'), 'quiet')}</div>
-  </article>`).join('');
-}
+function universeCards() { return universes.map((item) => `<article class="universe-card universe-card--${item.className}" data-tilt><div class="universe-card__media"><img src="${AS}${item.image}" alt="${local(item.name)} — MIRS" loading="lazy"><div class="universe-card__veil"></div><span class="card-index">${item.index} / ${item.signal}</span></div><div class="universe-card__content"><span class="card-kicker">${local(item.name)}</span><h3>${local(item.title)}</h3><p>${local(item.detail)}</p>${button(item.path, tr('Découvrir', 'Discover'), 'quiet')}</div></article>`).join(''); }
 
 function homeProductCard(item, mode) {
   const name = local(item.name);
