@@ -1,5 +1,13 @@
 const BASE_PATH = new URL('.', document.baseURI).pathname.replace(/\/$/, '');
 const AS = `${BASE_PATH}/assets/`;
+// Keep cached GitHub Pages entry documents compatible with this release.
+if (!document.querySelector('link[href*="mirs-unified.css"]')) {
+  const stylesheet = document.createElement('link');
+  stylesheet.rel = 'stylesheet';
+  stylesheet.href = `${BASE_PATH}/mirs-unified.css?v=unified-20261004`;
+  document.head.append(stylesheet);
+}
+
 const pageHref = (path) => `${BASE_PATH}${path}` || '/';
 
 function pageRoute(path = location.pathname) {
