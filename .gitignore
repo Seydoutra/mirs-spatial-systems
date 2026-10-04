@@ -17,3 +17,9 @@ dist/*
 !.github/
 !.github/workflows/
 !.github/workflows/deploy-pages.yml
+
+!dist/admin/
+!dist/admin/index.html
+!dist/en/
+!dist/en/admin/
+!dist/en/admin/index.html
