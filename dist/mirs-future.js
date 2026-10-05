@@ -36,6 +36,7 @@ const state = {
   theme: localStorage.getItem('mirs-future-theme') || 'dark',
   cart: storedCart(),
   locale: 'fr',
+  adminView: 'home',
 };
 
 const tr = (fr, en) => state.locale === 'en' ? en : fr;
@@ -70,9 +71,97 @@ const universes = [
   { path: '/informatique', key: 'informatique', index: '01', signal: 'INFRASTRUCTURE', name: { fr: 'Informatique', en: 'Information technology' }, title: { fr: 'Des systèmes plus <em>fiables.</em>', en: 'More <em>reliable</em> systems.' }, detail: { fr: 'Infrastructure, réseau, cybersécurité et assistance pour sécuriser la continuité de vos activités.', en: 'Infrastructure, networking, cybersecurity and support for business continuity.' }, image: 'future/informatique-team.jpg', className: 'tech' },
   { path: '/imprimerie', key: 'imprimerie', index: '02', signal: 'PRODUCTION', name: { fr: 'Imprimerie', en: 'Print production' }, title: { fr: 'Une marque qui <em>se voit.</em>', en: 'A brand that is <em>seen.</em>' }, detail: { fr: 'Supports imprimés, signalétique et objets promotionnels pour renforcer votre marque.', en: 'Printed materials, signage and promotional items that strengthen your brand.' }, image: 'future/imprimerie-team.jpg', className: 'print' },
   { path: '/formation', key: 'formation', index: '03', signal: 'COMPÉTENCES', name: { fr: 'MIRS Academy', en: 'MIRS Academy' }, title: { fr: 'Des compétences qui <em>restent.</em>', en: 'Skills that <em>last.</em>' }, detail: { fr: 'Des formations pratiques pour développer des compétences immédiatement mobilisables.', en: 'Practical training that develops immediately applicable skills.' }, image: 'editorial/formation-collaboration.jpg', className: 'academy' },
-  { path: '/creation-agence', key: 'creation-agence', index: '04', signal: 'CRÉATION', name: { fr: 'Création d’agence', en: 'Agency creation' }, title: { fr: 'Une agence prête à <em>opérer.</em>', en: 'An agency ready to <em>operate.</em>' }, detail: { fr: 'Positionnement, identité, outils et cadre opérationnel pour construire une agence cohérente.', en: 'Positioning, identity, tools and operating framework for a coherent agency.' }, image: 'future/references-enterprises.jpg', className: 'agency' },
+  { path: '/creation-agence', key: 'creation-agence', index: '04', signal: 'CRÉATION', name: { fr: 'Création d’agence', en: 'Agency creation' }, title: { fr: 'Une agence prête à <em>opérer.</em>', en: 'An agency ready to <em>operate.</em>' }, detail: { fr: 'Positionnement, identité, outils et cadre opérationnel pour construire une agence cohérente.', en: 'Positioning, identity, tools and operating framework for a coherent agency.' }, image: 'editorial/developpement-web.jpg', className: 'agency' },
   { path: '/maintenance', key: 'maintenance', index: '05', signal: 'CONTINUITÉ', name: { fr: 'Maintenance', en: 'Maintenance' }, title: { fr: 'Préserver ce qui <em>fonctionne.</em>', en: 'Keep what <em>works.</em>' }, detail: { fr: 'Prévention, intervention et suivi pour préserver la disponibilité de vos environnements.', en: 'Prevention, intervention and follow-up to preserve system availability.' }, image: 'editorial/maintenance-pc.jpg', className: 'maintenance' },
 ];
+
+const ADMIN_STORAGE_KEY = 'mirs-admin-workspace-v1';
+const ADMIN_SESSION_KEY = 'mirs-admin-session-v1';
+const ADMIN_USERNAME = 'adminmirs';
+const ADMIN_PASSWORD = 'admin';
+
+function adminSeed() {
+  return {
+    content: [
+      { id: 'home', area: { fr: 'Accueil MIRS', en: 'MIRS home' }, type: { fr: 'Page', en: 'Page' }, title: { fr: 'Des solutions intégrées qui font avancer.', en: 'Integrated solutions for performance.' }, status: 'published', updated: '05.10.2026' },
+      { id: 'informatique', area: { fr: 'Univers · Informatique', en: 'Capability · IT' }, type: { fr: 'Univers', en: 'Capability' }, title: { fr: 'Des systèmes plus fiables.', en: 'More reliable systems.' }, status: 'published', updated: '04.10.2026' },
+      { id: 'imprimerie', area: { fr: 'Univers · Imprimerie', en: 'Capability · Print' }, type: { fr: 'Univers', en: 'Capability' }, title: { fr: 'Une marque qui se voit.', en: 'A brand that is seen.' }, status: 'published', updated: '04.10.2026' },
+      { id: 'formation', area: { fr: 'Univers · MIRS Academy', en: 'Capability · MIRS Academy' }, type: { fr: 'Univers', en: 'Capability' }, title: { fr: 'Des compétences qui restent.', en: 'Skills that last.' }, status: 'review', updated: '03.10.2026' },
+      { id: 'creation-agence', area: { fr: 'Univers · Création d’agence de voyage', en: 'Capability · Travel agency creation' }, type: { fr: 'Univers', en: 'Capability' }, title: { fr: 'Une agence prête à opérer.', en: 'An agency ready to operate.' }, status: 'published', updated: '02.10.2026' },
+      { id: 'maintenance', area: { fr: 'Univers · Maintenance', en: 'Capability · Maintenance' }, type: { fr: 'Univers', en: 'Capability' }, title: { fr: 'Préserver ce qui fonctionne.', en: 'Keep what works.' }, status: 'review', updated: '02.10.2026' },
+    ],
+    requests: [
+      { id: 'REQ-104', customer: 'Nimba SMS', service: 'Imprimerie', detail: 'Polos et casquettes pour une équipe terrain.', priority: 'high', status: 'new', updated: '04.10.2026' },
+      { id: 'REQ-103', customer: 'Groupe Amara', service: 'Informatique', detail: 'Mise à niveau réseau et postes de travail.', priority: 'normal', status: 'analysis', updated: '03.10.2026' },
+      { id: 'REQ-102', customer: 'Cabinet Horizon', service: 'Formation', detail: 'Parcours Microsoft Office pour 12 collaborateurs.', priority: 'normal', status: 'quote', updated: '02.10.2026' },
+      { id: 'REQ-101', customer: 'Atelier Koba', service: 'Maintenance', detail: 'Contrat de suivi préventif des équipements.', priority: 'high', status: 'progress', updated: '01.10.2026' },
+      { id: 'REQ-100', customer: 'Studio Sira', service: 'Création d’agence de voyage', detail: 'Positionnement, identité et cadre de lancement.', priority: 'normal', status: 'done', updated: '29.09.2026' },
+    ],
+    training: courses.map((course, index) => ({
+      id: `course-${index}`,
+      name: course.name,
+      category: course.category,
+      status: index === 4 ? 'draft' : 'published',
+      sessions: index === 4 ? 0 : index + 1,
+      learners: [18, 12, 24, 9, 0][index],
+      capacity: [24, 18, 30, 16, 18][index],
+    })),
+    media: [
+      { id: 'company-film', name: { fr: 'Présentation de MIRS', en: 'MIRS company film' }, type: { fr: 'Vidéo · Institutionnel', en: 'Video · Corporate' }, file: 'mirs-media/mirs-company-presentation.mp4', status: 'published', updated: '05.10.2026' },
+      { id: 'print-film', name: { fr: 'Présentation de l’imprimerie', en: 'Print workshop film' }, type: { fr: 'Vidéo · Imprimerie', en: 'Video · Print workshop' }, file: 'mirs-media/mirs-print-presentation.mp4', status: 'published', updated: '05.10.2026' },
+      { id: 'digital-film', name: { fr: 'Animation MacBook', en: 'MacBook motion' }, type: { fr: 'Vidéo · Digital', en: 'Video · Digital' }, file: 'mirs-media/mirs-macbook-motion.mp4', status: 'published', updated: '04.10.2026' },
+    ],
+    inventory: {
+      tech: products.tech.map(() => true),
+      print: products.print.map(() => true),
+    },
+    settings: { maintenance: false, publicRequests: true, bilingual: true },
+  };
+}
+
+function adminData() {
+  const fallback = adminSeed();
+  try {
+    const saved = JSON.parse(localStorage.getItem(ADMIN_STORAGE_KEY) || 'null');
+    if (!saved || typeof saved !== 'object') return fallback;
+    return {
+      ...fallback,
+      ...saved,
+      content: Array.isArray(saved.content) ? saved.content : fallback.content,
+      requests: Array.isArray(saved.requests) ? saved.requests : fallback.requests,
+      training: Array.isArray(saved.training) ? saved.training : fallback.training,
+      media: Array.isArray(saved.media) ? saved.media : fallback.media,
+      inventory: { ...fallback.inventory, ...(saved.inventory || {}) },
+      settings: { ...fallback.settings, ...(saved.settings || {}) },
+    };
+  } catch {
+    return fallback;
+  }
+}
+
+function saveAdminData(data) {
+  localStorage.setItem(ADMIN_STORAGE_KEY, JSON.stringify(data));
+}
+
+function adminAuthenticated() {
+  try {
+    return sessionStorage.getItem(ADMIN_SESSION_KEY) === 'authenticated';
+  } catch {
+    return false;
+  }
+}
+
+function adminLogout() {
+  try {
+    sessionStorage.removeItem(ADMIN_SESSION_KEY);
+  } catch {
+    // Private browsing can deny sessionStorage access; the guard remains closed.
+  }
+}
+
+function adminLogin() {
+  return shell(`<main class="admin-auth"><section class="admin-auth__card"><div class="admin-auth__mark">${brandMark()}<span><b>MIRS</b><small>SPATIAL SYSTEMS</small></span></div><div class="admin-auth__intro"><span>${tr('MIRS / ADMINISTRATION', 'MIRS / ADMINISTRATION')}</span><h1>${tr('Accéder au<br><em>poste de pilotage.</em>', 'Access the<br><em>control room.</em>')}</h1><p>${tr('Un espace réservé pour administrer le contenu du site, les services, les formations et les boutiques MIRS.', 'A private workspace to manage MIRS site content, services, training and stores.')}</p></div><form class="admin-auth__form" data-admin-login><label>${tr('Identifiant', 'Username')}<input name="username" required autocomplete="username" placeholder="adminmirs"></label><label>${tr('Mot de passe', 'Password')}<input name="password" type="password" required autocomplete="current-password" placeholder="•••••"></label><button type="submit" class="admin-action-button admin-action-button--accent">${tr('Ouvrir l’administration', 'Open administration')} <span>↗</span></button><p class="admin-auth__status" data-admin-login-status aria-live="polite" role="status"></p></form><p class="admin-auth__security">${tr('Accès réservé à l’équipe MIRS.', 'Access reserved for the MIRS team.')}</p><a class="admin-auth__back" href="${pageHref('/')}" data-link>← ${tr('Retour au site public', 'Return to public site')}</a></section></main>`, '/admin');
+}
 
 const clientLogos = Array.from({ length: 81 }, (_, index) => `clients/${String(index + 1).padStart(2, '0')}.webp`);
 
@@ -117,7 +206,15 @@ function brandMark() {
   return `<span class="brand-mark" aria-hidden="true"><img class="brand-logo brand-logo--color" src="${AS}mirs-logo.png" alt=""><img class="brand-logo brand-logo--white" src="${AS}mirs-media/mirs-logo-white-transparent.png" alt=""></span>`;
 }
 
-function universeCards() { return universes.map((item) => `<article class="universe-card universe-card--${item.className}" data-tilt><div class="universe-card__media"><img src="${AS}${item.image}" alt="${local(item.name)} — MIRS" loading="lazy"><div class="universe-card__veil"></div><span class="card-index">${item.index} / ${item.signal}</span></div><div class="universe-card__content"><span class="card-kicker">${local(item.name)}</span><h3>${local(item.title)}</h3><p>${local(item.detail)}</p>${button(item.path, tr('Découvrir', 'Discover'), 'quiet')}</div></article>`).join(''); }
+function universeCards() {
+  return universes.map((item) => `<article class="universe-card universe-card--${item.className}" data-tilt>
+    <div class="universe-card__media">
+      <img src="${AS}${item.image}" alt="${local(item.name)} — MIRS" loading="lazy">
+      <div class="universe-card__veil"></div><span class="card-index">${item.index} / ${item.signal}</span>
+    </div>
+    <div class="universe-card__content"><span class="card-kicker">${local(item.name)}</span><h3>${local(item.title)}</h3><p>${local(item.detail)}</p>${button(item.path, tr('Découvrir', 'Discover'), 'quiet')}</div>
+  </article>`).join('');
+}
 
 function homeProductCard(item, mode) {
   const name = local(item.name);
@@ -190,12 +287,13 @@ function overlays() {
 }
 
 function shell(content, route = '') {
+  const isAdminRoute = route === '/admin';
   return `<div class="site-shell route-${route.replaceAll('/', '-').replace(/^-/, '') || 'home'}">
-    <div class="scroll-meter" aria-hidden="true"><span data-scroll-meter></span></div>
-    ${header()}
+    ${isAdminRoute ? '' : '<div class="scroll-meter" aria-hidden="true"><span data-scroll-meter></span></div>'}
+    ${isAdminRoute ? '' : header()}
     ${content}
-    ${footer()}
-    ${overlays()}
+    ${isAdminRoute ? '' : footer()}
+    ${isAdminRoute ? '' : overlays()}
   </div>`;
 }
 
@@ -246,6 +344,24 @@ function home() {
         <p>${tr('Des expertises distinctes, structurées pour ouvrir la bonne conversation au bon moment.', 'Distinct capabilities designed to open the right conversation at the right time.')}</p>
       </div>
       <div class="universe-grid">${universeCards()}</div>
+    </section>
+
+    <section class="home-priority-section section-shell" aria-labelledby="home-priority-title">
+      <div class="section-top home-priority-section__intro"><div>${eyebrow(tr('POUR GRANDIR ET DURER', 'BUILT TO GROW AND LAST'))}${sectionTitle(tr('Les priorités<br>qui rendent votre<br><em>activité durable.</em>', 'Priorities that make<br>your business<br><em>more resilient.</em>'), 'home-priority-title')}</div><p>${tr('MIRS accompagne aussi les métiers du voyage et la continuité des opérations : de la création d’une agence au déploiement d’AMADEUS, jusqu’au suivi de maintenance.', 'MIRS also supports travel operations and business continuity: from creating an agency and deploying AMADEUS to maintaining the systems that keep work moving.')}</p></div>
+      <div class="home-priority-grid">
+        <article class="home-priority-card home-priority-card--agency" data-reveal>
+          <div class="home-priority-card__top"><span>04 / TRAVEL SYSTEM</span><i aria-hidden="true">↗</i></div>
+          <div class="home-priority-card__body"><small>${tr('CRÉATION D’AGENCE DE VOYAGE', 'TRAVEL AGENCY CREATION')}</small><h3>${tr('Une agence prête<br>à <em>opérer.</em>', 'An agency ready<br>to <em>operate.</em>')}</h3><p>${tr('Positionnement, identité, offres et outils pour passer d’une idée à une agence de voyage structurée.', 'Positioning, identity, offers and tools to turn an idea into a structured travel agency.')}</p><a href="${pageHref('/creation-agence')}" data-link class="home-priority-card__link">${tr('Construire l’agence', 'Build the agency')} <span>↗</span></a></div>
+        </article>
+        <article class="home-priority-card home-priority-card--amadeus" data-reveal>
+          <div class="home-priority-card__top"><span>03 / AMADEUS</span><i aria-hidden="true">↗</i></div>
+          <div class="home-priority-card__body"><small>${tr('REPRÉSENTATION & FORMATION', 'REPRESENTATION & TRAINING')}</small><h3>${tr('AMADEUS,<br>au cœur du <em>métier.</em>', 'AMADEUS,<br>at the heart of<br><em>travel operations.</em>')}</h3><p>${tr('Une porte d’entrée dédiée pour représenter, déployer et transmettre les usages AMADEUS aux équipes de voyage.', 'A dedicated entry point to represent, deploy and transfer AMADEUS know-how to travel teams.')}</p><a href="${pageHref('/formation')}" data-link class="home-priority-card__link">${tr('Découvrir le parcours', 'Explore the pathway')} <span>↗</span></a></div>
+        </article>
+        <article class="home-priority-card home-priority-card--maintenance" data-reveal>
+          <div class="home-priority-card__top"><span>05 / CONTINUITY</span><i aria-hidden="true">↗</i></div>
+          <div class="home-priority-card__body"><small>${tr('SUIVI DE MAINTENANCE', 'MAINTENANCE FOLLOW-UP')}</small><h3>${tr('Préserver ce qui<br><em>fonctionne.</em>', 'Keep what<br><em>works.</em>')}</h3><p>${tr('Prévention, intervention et historique clair pour suivre les équipements et réduire les interruptions.', 'Prevention, intervention and a clear history to monitor assets and reduce interruptions.')}</p><a href="${pageHref('/maintenance')}" data-link class="home-priority-card__link">${tr('Suivre la continuité', 'Maintain continuity')} <span>↗</span></a></div>
+        </article>
+      </div>
     </section>
 
     <section class="home-catalogue section-shell" aria-labelledby="home-catalogue-title">
@@ -522,43 +638,148 @@ function shop(kind) {
   </main>`, isTech ? '/informatique/boutique' : '/imprimerie/boutique');
 }
 
-function dashboard() {
+function adminStatus(status) {
   const labels = {
-    overview: tr('Vue d’ensemble', 'Overview'),
-    universes: tr('Univers', 'Capabilities'),
-    stores: tr('Boutiques', 'Stores'),
-    academy: tr('Formations', 'Training'),
-    content: tr('Contenus', 'Content'),
+    published: tr('Publié', 'Published'),
+    draft: tr('Brouillon', 'Draft'),
+    review: tr('À relire', 'Review'),
+    new: tr('Nouvelle', 'New'),
+    analysis: tr('En analyse', 'In review'),
+    quote: tr('Devis envoyé', 'Quote sent'),
+    progress: tr('En cours', 'In progress'),
+    done: tr('Terminée', 'Completed'),
   };
-  const universeRows = universes.map((unit) => `<article class="admin-universe-row">
-    <span class="admin-universe-row__index">${unit.index}</span><div><b>${local(unit.name)}</b><small>${tr('Page publique · FR / EN', 'Public page · FR / EN')}</small></div><span class="admin-status">${tr('À relire', 'Review')}</span>
+  return `<span class="admin-badge admin-badge--${status}">${labels[status] || status}</span>`;
+}
+
+function adminViewHeading(view) {
+  const headings = {
+    home: [tr('VUE D’ENSEMBLE', 'OVERVIEW'), tr('Le poste de pilotage<br><em>MIRS.</em>', 'The <em>MIRS</em><br>control room.'), tr('Les priorités du site et des services au même endroit.', 'Site and service priorities in one place.')],
+    content: [tr('SITE / CONTENUS', 'SITE / CONTENT'), tr('Modifier ce que<br>vos publics <em>voient.</em>', 'Edit what your<br>audiences <em>see.</em>'), tr('Pages, univers, textes FR / EN et statut de publication.', 'Pages, capabilities, FR / EN copy and publishing status.')],
+    services: [tr('SERVICES / DEMANDES', 'SERVICES / REQUESTS'), tr('Traiter chaque<br>demande avec <em>méthode.</em>', 'Handle every<br>request with <em>care.</em>'), tr('Une file de suivi pour les cinq univers et les commandes.', 'One tracking queue for all five capabilities and orders.')],
+    training: [tr('ACADEMY / FORMATIONS', 'ACADEMY / TRAINING'), tr('Des parcours<br>prêts à <em>transmettre.</em>', 'Pathways ready<br>to be <em>shared.</em>'), tr('Sessions, inscriptions, capacité et publication des modules.', 'Sessions, enrolments, capacity and module publishing.')],
+    stores: [tr('BOUTIQUES / CATALOGUES', 'STORES / CATALOGUES'), tr('Garder les offres<br><em>disponibles.</em>', 'Keep offers<br><em>available.</em>'), tr('Produits, visuels et disponibilité pour l’informatique et l’imprimerie.', 'Products, imagery and availability for IT and print.')],
+    media: [tr('SITE / MÉDIAS', 'SITE / MEDIA'), tr('Les bons médias<br>au bon <em>endroit.</em>', 'The right media<br>in the right <em>place.</em>'), tr('Vidéos immersives, logos et ressources publiques.', 'Immersive videos, logos and public resources.')],
+    settings: [tr('CONFIGURATION', 'SETTINGS'), tr('Un espace simple<br>à <em>maintenir.</em>', 'A workspace<br>easy to <em>maintain.</em>'), tr('Préférences de fonctionnement et qualité de publication.', 'Operating preferences and publishing quality.')],
+  };
+  const [label, title, detail] = headings[view] || headings.home;
+  return `<div class="admin-main__heading"><div><span>${label}</span><h1>${title}</h1></div><p>${detail}</p></div>`;
+}
+
+function adminRequestsRows(data, compact = false) {
+  const requests = compact ? data.requests.slice(0, 4) : data.requests;
+  return requests.map((item) => `<article class="admin-request-row ${compact ? 'is-compact' : ''}" data-admin-row="requests" data-search-text="${[item.id, item.customer, item.service, item.detail].join(' ').toLowerCase()}">
+    <div class="admin-request-id"><b>${item.id}</b><small>${item.updated}</small></div>
+    <div class="admin-request-copy"><b>${item.customer}</b><span>${item.service}</span><p>${item.detail}</p></div>
+    <div class="admin-request-state">${adminStatus(item.status)}${item.priority === 'high' ? `<small class="admin-priority-note">${tr('Prioritaire', 'High priority')}</small>` : ''}</div>
+    ${compact ? `<button type="button" class="admin-row-link" data-admin-view="services">${tr('Ouvrir', 'Open')}</button>` : `<label class="admin-inline-field"><span>${tr('Statut', 'Status')}</span><select data-admin-request-status="${item.id}" aria-label="${tr(`Statut de ${item.id}`, `Status of ${item.id}`)}"><option value="new" ${item.status === 'new' ? 'selected' : ''}>${tr('Nouvelle', 'New')}</option><option value="analysis" ${item.status === 'analysis' ? 'selected' : ''}>${tr('En analyse', 'In review')}</option><option value="quote" ${item.status === 'quote' ? 'selected' : ''}>${tr('Devis envoyé', 'Quote sent')}</option><option value="progress" ${item.status === 'progress' ? 'selected' : ''}>${tr('En cours', 'In progress')}</option><option value="done" ${item.status === 'done' ? 'selected' : ''}>${tr('Terminée', 'Completed')}</option></select></label>`}
   </article>`).join('');
-  const storeRows = [
-    [tr('Boutique informatique', 'IT store'), products.tech.length, tr('offres à gérer', 'offers to manage')],
-    [tr('Boutique imprimerie', 'Print store'), products.print.length, tr('offres à gérer', 'offers to manage')],
-  ].map(([name, count, note]) => `<article class="admin-resource"><span>${name}</span><b>${count}</b><small>${note}</small><button type="button">${tr('Configurer', 'Configure')} ↗</button></article>`).join('');
-  const courseRows = courses.map((course, index) => `<article class="admin-course-row"><span>0${index + 1}</span><div><b>${local(course.name)}</b><small>${local(course.category)}</small></div><button type="button">${tr('Modifier', 'Edit')}</button></article>`).join('');
-  return shell(`<main class="admin-page">
-    <section class="admin-portal">
-      <div>${eyebrow('MIRS ADMIN / LOCAL PROTOTYPE')}<h1>${tr('Piloter le site,<br>les offres et les<br><em>parcours.</em>', 'Manage the site,<br>offers and<br><em>pathways.</em>')}</h1><p>${tr('Cet espace présente le futur poste de pilotage de MIRS. Il est un prototype visuel local : aucune publication, authentification ou donnée client réelle n’y est encore connectée.', 'This space presents the future MIRS control room. It is a local visual prototype: no publishing, authentication or real client data is connected yet.')}</p></div>
-      <div class="admin-portal__mark" aria-hidden="true"><span>05</span><b>${tr('UNIVERS', 'CAPABILITIES')}</b><i>↗</i></div>
-    </section>
-    <section class="admin-workspace section-shell">
-      <aside class="admin-aside"><span>${tr('ESPACES DE GESTION', 'MANAGEMENT SPACES')}</span><p>${tr('Un registre unique pour que chaque univers, boutique et formation reste visible et administrable.', 'One unified register so every capability, store and course remains visible and manageable.')}</p><a href="${pageHref('/')}" data-link class="button-link quiet"><span>${tr('Retour au site', 'Return to site')}</span><i>↗</i></a></aside>
-      <div class="admin-console">
-        <div class="admin-console__top"><div><span>${tr('APERÇU LOCAL', 'LOCAL PREVIEW')}</span><b>${tr('Configuration MIRS', 'MIRS configuration')}</b></div><small>${tr('Dernière structure : cinq univers', 'Current structure: five capabilities')}</small></div>
-        <nav class="admin-tabs" aria-label="${tr('Sections d’administration', 'Administration sections')}">${Object.entries(labels).map(([key, label], index) => `<button type="button" data-admin-tab="${key}" aria-selected="${index === 0 ? 'true' : 'false'}">${label}</button>`).join('')}</nav>
-        <section class="admin-panel" data-admin-panel="overview">
-          <div class="admin-panel__heading"><div><span>${tr('VUE D’ENSEMBLE', 'OVERVIEW')}</span><h2>${tr('Tout le système<br>dans une même <em>lecture.</em>', 'One clear view<br>of the whole <em>system.</em>')}</h2></div><p>${tr('Le tableau ne fabrique pas de chiffres fictifs : il organise les véritables zones à connecter lorsque l’administration sécurisée sera en place.', 'This dashboard does not invent metrics: it organizes the real areas to connect when secure administration is in place.')}</p></div>
-          <div class="admin-summary-grid"><article><span>05</span><b>${tr('Univers à administrer', 'Capabilities to manage')}</b><small>${tr('IT, imprimerie, Academy, création d’agence, maintenance.', 'IT, print, Academy, agency creation, maintenance.')}</small></article><article><span>02</span><b>${tr('Boutiques distinctes', 'Distinct stores')}</b><small>${tr('Catalogues, visuels, disponibilité et demandes de devis.', 'Catalogues, imagery, availability and quote requests.')}</small></article><article><span>03</span><b>${tr('Vidéos à maintenir', 'Videos to maintain')}</b><small>${tr('MIRS, imprimerie et animation digitale.', 'MIRS, print and digital animation.')}</small></article></div>
-          <div class="admin-universe-list">${universeRows}</div>
-        </section>
-        <section class="admin-panel" data-admin-panel="universes" hidden><div class="admin-panel__heading"><div><span>${tr('REGISTRE DES UNIVERS', 'CAPABILITY REGISTER')}</span><h2>${tr('Cinq univers.<br>Une gestion <em>complète.</em>', 'Five capabilities.<br>One complete <em>management model.</em>')}</h2></div><p>${tr('Chaque univers devra regrouper sa page publique, ses offres, ses demandes, ses médias, son référencement et ses textes FR / EN.', 'Each capability should bring together its public page, offers, requests, media, SEO and FR / EN content.')}</p></div><div class="admin-universe-list admin-universe-list--expanded">${universeRows}</div></section>
-        <section class="admin-panel" data-admin-panel="stores" hidden><div class="admin-panel__heading"><div><span>${tr('BOUTIQUES', 'STORES')}</span><h2>${tr('Deux catalogues<br>à garder <em>vivants.</em>', 'Two catalogues<br>to keep <em>current.</em>')}</h2></div><p>${tr('Les fiches produit, visuels, disponibilités et demandes de devis seront séparés par boutique.', 'Product records, imagery, availability and quote requests will remain separate by store.')}</p></div><div class="admin-resource-grid">${storeRows}</div></section>
-        <section class="admin-panel" data-admin-panel="academy" hidden><div class="admin-panel__heading"><div><span>MIRS ACADEMY</span><h2>${tr('Des parcours<br>à administrer<br><em>dans la durée.</em>', 'Learning pathways<br>to manage<br><em>over time.</em>')}</h2></div><p>${tr('Sessions, formateurs, capacités, inscriptions et attestations devront être reliés à chaque parcours.', 'Sessions, trainers, capacity, registrations and certificates should be linked to each pathway.')}</p></div><div class="admin-course-list">${courseRows}</div></section>
-        <section class="admin-panel" data-admin-panel="content" hidden><div class="admin-panel__heading"><div><span>${tr('CONTENUS & MÉDIAS', 'CONTENT & MEDIA')}</span><h2>${tr('Une présence<br>publique cohérente<br><em>en deux langues.</em>', 'A coherent public<br>presence in<br><em>two languages.</em>')}</h2></div><p>${tr('À connecter : pages FR / EN, vidéos, logo transparent, références clients, textes corporate et SEO.', 'To connect: FR / EN pages, videos, transparent logo, client references, corporate copy and SEO.')}</p></div><div class="admin-media-list"><article><span>FR / EN</span><b>${tr('Pages publiques', 'Public pages')}</b><small>${tr('Versions linguistiques à valider avant publication.', 'Language versions to validate before publication.')}</small></article><article><span>03</span><b>${tr('Vidéos d’accueil', 'Homepage videos')}</b><small>${tr('Lecteurs responsive, format natif conservé.', 'Responsive players, native aspect ratio preserved.')}</small></article><article><span>81</span><b>${tr('Références', 'References')}</b><small>${tr('Logos cadrés en contain avec une zone de sécurité.', 'Logos framed with contain and a safety area.')}</small></article></div></section>
-      </div>
-    </section>
+}
+
+function adminContentRows(data) {
+  return data.content.map((item) => `<article class="admin-content-row" data-admin-row="content" data-search-text="${[item.area.fr, item.area.en, item.title.fr, item.title.en].join(' ').toLowerCase()}">
+    <div class="admin-content-type"><span>${item.type[state.locale] || item.type.fr}</span><b>${item.id.toUpperCase()}</b></div>
+    <div class="admin-content-copy"><b>${item.title[state.locale] || item.title.fr}</b><small>${item.area[state.locale] || item.area.fr}</small></div>
+    ${adminStatus(item.status)}
+    <small class="admin-date">${item.updated}</small>
+    <button type="button" class="admin-row-link" data-admin-edit="content" data-admin-id="${item.id}">${tr('Modifier', 'Edit')}</button>
+  </article>`).join('');
+}
+
+function adminTrainingRows(data) {
+  return data.training.map((course, index) => `<article class="admin-training-row" data-admin-row="training" data-search-text="${[local(course.name), local(course.category)].join(' ').toLowerCase()}">
+    <span class="admin-index">${String(index + 1).padStart(2, '0')}</span>
+    <div class="admin-training-copy"><b>${local(course.name)}</b><small>${local(course.category)}</small></div>
+    <div class="admin-training-stat"><b>${course.learners}</b><small>${tr('inscrits', 'learners')}</small></div>
+    <div class="admin-training-stat"><b>${course.sessions}</b><small>${tr('sessions', 'sessions')}</small></div>
+    ${adminStatus(course.status)}
+    <button type="button" class="admin-row-link" data-admin-toggle-training="${course.id}">${course.status === 'published' ? tr('Dépublier', 'Unpublish') : tr('Publier', 'Publish')}</button>
+  </article>`).join('');
+}
+
+function adminProductRows(mode, data) {
+  return products[mode].map((item, index) => {
+    const active = data.inventory[mode]?.[index] !== false;
+    return `<article class="admin-product-row" data-admin-row="stores" data-search-text="${[local(item.name), local(item.category), local(item.detail)].join(' ').toLowerCase()}">
+      <div class="admin-product-thumb"><img src="${AS}${item.image}" alt="" loading="lazy"></div>
+      <div class="admin-product-copy"><b>${local(item.name)}</b><small>${local(item.category)}</small><p>${local(item.detail)}</p></div>
+      <span class="admin-live-dot ${active ? 'is-live' : ''}">${active ? tr('Visible', 'Live') : tr('Masqué', 'Hidden')}</span>
+      <button type="button" class="admin-row-link" data-admin-product="${mode}:${index}">${active ? tr('Masquer', 'Hide') : tr('Publier', 'Publish')}</button>
+    </article>`;
+  }).join('');
+}
+
+function adminMediaRows(data) {
+  return data.media.map((item) => `<article class="admin-media-row" data-admin-row="media" data-search-text="${[item.name.fr, item.name.en, item.type.fr, item.type.en].join(' ').toLowerCase()}">
+    <div class="admin-media-preview"><video muted playsinline preload="metadata"><source src="${AS}${item.file}" type="video/mp4"></video><span>${tr('Aperçu', 'Preview')}</span></div>
+    <div class="admin-media-copy"><span>${item.type[state.locale] || item.type.fr}</span><b>${item.name[state.locale] || item.name.fr}</b><small>${item.file}</small></div>
+    ${adminStatus(item.status)}<small class="admin-date">${item.updated}</small>
+    <button type="button" class="admin-row-link" data-admin-toggle-media="${item.id}">${item.status === 'published' ? tr('Archiver', 'Archive') : tr('Publier', 'Publish')}</button>
+  </article>`).join('');
+}
+
+function adminViewMarkup(view, data) {
+  const openRequests = data.requests.filter((item) => !['done'].includes(item.status)).length;
+  const publishedContent = data.content.filter((item) => item.status === 'published').length;
+  const publishedTraining = data.training.filter((item) => item.status === 'published').length;
+  const liveProducts = [...(data.inventory.tech || []), ...(data.inventory.print || [])].filter(Boolean).length;
+  if (view === 'content') return `<section class="admin-view admin-view--content">
+    <div class="admin-toolbar"><label class="admin-search"><span>⌕</span><input type="search" data-admin-search="content" placeholder="${tr('Rechercher une page ou un univers', 'Search a page or capability')}"></label><button type="button" class="admin-action-button admin-action-button--accent" data-admin-action="new-content">${tr('Nouveau contenu', 'New content')}</button></div>
+    <div class="admin-table-head"><span>${tr('Page / univers', 'Page / capability')}</span><span>${tr('Statut', 'Status')}</span><span>${tr('Mise à jour', 'Updated')}</span><span></span></div>
+    <div class="admin-content-list">${adminContentRows(data)}</div>
+  </section>`;
+  if (view === 'services') return `<section class="admin-view admin-view--services">
+    <div class="admin-toolbar"><label class="admin-search"><span>⌕</span><input type="search" data-admin-search="requests" placeholder="${tr('Rechercher par dossier, client ou univers', 'Search by case, client or capability')}"></label><button type="button" class="admin-action-button" data-admin-view="content">${tr('Voir les contenus', 'View content')}</button></div>
+    <div class="admin-service-note"><span>${openRequests}</span><div><b>${tr('demandes ouvertes', 'open requests')}</b><small>${tr('Les statuts sont sauvegardés dans ce navigateur.', 'Statuses are saved in this browser.')}</small></div></div>
+    <div class="admin-request-list">${adminRequestsRows(data)}</div>
+  </section>`;
+  if (view === 'training') return `<section class="admin-view admin-view--training">
+    <div class="admin-toolbar"><label class="admin-search"><span>⌕</span><input type="search" data-admin-search="training" placeholder="${tr('Rechercher une formation', 'Search a course')}"></label><button type="button" class="admin-action-button admin-action-button--accent" data-admin-action="new-training">${tr('Ajouter un module', 'Add a module')}</button></div>
+    <div class="admin-training-summary"><div><b>${publishedTraining}</b><span>${tr('modules publiés', 'published modules')}</span></div><div><b>${data.training.reduce((total, item) => total + item.learners, 0)}</b><span>${tr('apprenants suivis', 'learners tracked')}</span></div><div><b>${data.training.reduce((total, item) => total + item.sessions, 0)}</b><span>${tr('sessions planifiées', 'planned sessions')}</span></div></div>
+    <div class="admin-training-list">${adminTrainingRows(data)}</div>
+  </section>`;
+  if (view === 'stores') return `<section class="admin-view admin-view--stores">
+    <div class="admin-toolbar"><label class="admin-search"><span>⌕</span><input type="search" data-admin-search="stores" placeholder="${tr('Rechercher un produit', 'Search a product')}"></label><span class="admin-toolbar-stat">${liveProducts} / ${products.tech.length + products.print.length} ${tr('offres visibles', 'offers live')}</span></div>
+    <div class="admin-store-section"><div class="admin-store-heading"><div><span>01 / IT</span><h2>${tr('Boutique informatique', 'IT store')}</h2></div><a href="${pageHref('/informatique/boutique')}" data-link class="admin-row-link">${tr('Voir la boutique', 'View store')}</a></div><div class="admin-product-list">${adminProductRows('tech', data)}</div></div>
+    <div class="admin-store-section"><div class="admin-store-heading"><div><span>02 / PRINT</span><h2>${tr('Boutique imprimerie', 'Print store')}</h2></div><a href="${pageHref('/imprimerie/boutique')}" data-link class="admin-row-link">${tr('Voir la boutique', 'View store')}</a></div><div class="admin-product-list">${adminProductRows('print', data)}</div></div>
+  </section>`;
+  if (view === 'media') return `<section class="admin-view admin-view--media">
+    <div class="admin-toolbar"><label class="admin-search"><span>⌕</span><input type="search" data-admin-search="media" placeholder="${tr('Rechercher un média', 'Search media')}"></label><span class="admin-toolbar-stat">03 ${tr('vidéos natives', 'native videos')}</span></div>
+    <div class="admin-media-list--full">${adminMediaRows(data)}</div>
+  </section>`;
+  if (view === 'settings') return `<section class="admin-view admin-view--settings">
+    <div class="admin-settings-card"><div><span>${tr('QUALITÉ DU SITE', 'SITE QUALITY')}</span><h2>${tr('Des règles simples<br>pour garder MIRS <em>clair.</em>', 'Simple rules<br>to keep MIRS <em>clear.</em>')}</h2><p>${tr('Ces préférences sont enregistrées localement pour préparer la future connexion sécurisée.', 'These preferences are stored locally ahead of the future secure connection.')}</p></div><div class="admin-settings-list"><label><span><b>${tr('Recevoir les demandes publiques', 'Accept public requests')}</b><small>${tr('Laisser le formulaire de contact actif.', 'Keep the contact form active.')}</small></span><input type="checkbox" data-admin-setting="publicRequests" ${data.settings.publicRequests ? 'checked' : ''}></label><label><span><b>${tr('Publier les deux langues', 'Publish both languages')}</b><small>${tr('Maintenir un contenu FR / EN cohérent.', 'Keep FR / EN content aligned.')}</small></span><input type="checkbox" data-admin-setting="bilingual" ${data.settings.bilingual ? 'checked' : ''}></label><label><span><b>${tr('Mode maintenance', 'Maintenance mode')}</b><small>${tr('Préparer une interruption visible du site.', 'Prepare a visible site interruption.')}</small></span><input type="checkbox" data-admin-setting="maintenance" ${data.settings.maintenance ? 'checked' : ''}></label></div></div>
+    <div class="admin-settings-foot"><span>${tr('Données de démonstration locales · prêtes à être reliées à une base sécurisée.', 'Local demo data · ready to connect to a secure database.')}</span><button type="button" class="admin-action-button" data-admin-action="reset">${tr('Réinitialiser les données', 'Reset data')}</button></div>
+  </section>`;
+  return `<section class="admin-view admin-view--home">
+    <div class="admin-kpi-grid"><article><span>${String(openRequests).padStart(2, '0')}</span><b>${tr('Demandes à traiter', 'Requests to process')}</b><small>${tr('Tous les univers confondus', 'Across all capabilities')}</small><button type="button" data-admin-view="services">${tr('Ouvrir la file', 'Open queue')}</button></article><article><span>${String(publishedContent).padStart(2, '0')}</span><b>${tr('Contenus publiés', 'Published content')}</b><small>${tr('Pages et univers actifs', 'Active pages and capabilities')}</small><button type="button" data-admin-view="content">${tr('Gérer le site', 'Manage site')}</button></article><article><span>${String(publishedTraining).padStart(2, '0')}</span><b>${tr('Formations actives', 'Active courses')}</b><small>${tr('Modules disponibles', 'Available modules')}</small><button type="button" data-admin-view="training">${tr('Voir Academy', 'View Academy')}</button></article><article><span>${String(liveProducts).padStart(2, '0')}</span><b>${tr('Offres visibles', 'Live offers')}</b><small>${tr('Informatique + imprimerie', 'IT + print')}</small><button type="button" data-admin-view="stores">${tr('Gérer les boutiques', 'Manage stores')}</button></article></div>
+    <div class="admin-home-grid"><section class="admin-card"><div class="admin-card-head"><div><span>${tr('À TRAITER', 'TO PROCESS')}</span><h2>${tr('Les dernières demandes', 'Latest requests')}</h2></div><button type="button" class="admin-row-link" data-admin-view="services">${tr('Tout voir', 'View all')}</button></div><div class="admin-request-list admin-request-list--compact">${adminRequestsRows(data, true)}</div></section><section class="admin-card"><div class="admin-card-head"><div><span>${tr('SANTÉ DU SITE', 'SITE HEALTH')}</span><h2>${tr('Une lecture rapide', 'A quick read')}</h2></div><button type="button" class="admin-row-link" data-admin-view="settings">${tr('Paramètres', 'Settings')}</button></div><div class="admin-health-list"><div><span class="admin-health-dot is-good"></span><b>${tr('Pages publiques', 'Public pages')}</b><small>${publishedContent} / ${data.content.length} ${tr('publiées', 'published')}</small></div><div><span class="admin-health-dot is-good"></span><b>${tr('Médias immersifs', 'Immersive media')}</b><small>${data.media.length} ${tr('vidéos natives', 'native videos')}</small></div><div><span class="admin-health-dot ${data.settings.bilingual ? 'is-good' : 'is-warning'}"></span><b>${tr('Version anglaise', 'English version')}</b><small>${data.settings.bilingual ? tr('Active', 'Active') : tr('À vérifier', 'Needs review')}</small></div><div><span class="admin-health-dot ${data.settings.maintenance ? 'is-warning' : 'is-good'}"></span><b>${tr('Disponibilité du site', 'Site availability')}</b><small>${data.settings.maintenance ? tr('Mode maintenance', 'Maintenance mode') : tr('Opérationnel', 'Operational')}</small></div></div></section></div>
+    <section class="admin-card admin-card--universes"><div class="admin-card-head"><div><span>${tr('CINQ UNIVERS', 'FIVE CAPABILITIES')}</span><h2>${tr('Chaque pôle a son espace de gestion.', 'Each capability has its own workspace.')}</h2></div><button type="button" class="admin-row-link" data-admin-view="content">${tr('Modifier les pages', 'Edit pages')}</button></div><div class="admin-universe-grid">${universes.map((unit) => `<button type="button" data-admin-view="content"><span>${unit.index}</span><b>${local(unit.name)}</b><small>${unit.signal}</small></button>`).join('')}</div></section>
+  </section>`;
+}
+
+function dashboard() {
+  if (!adminAuthenticated()) return adminLogin();
+  const labels = {
+    home: tr('Vue d’ensemble', 'Overview'),
+    content: tr('Contenus du site', 'Site content'),
+    services: tr('Demandes de services', 'Service requests'),
+    training: tr('Formations', 'Training'),
+    stores: tr('Boutiques', 'Stores'),
+    media: tr('Médias & vidéos', 'Media & videos'),
+    settings: tr('Paramètres', 'Settings'),
+  };
+  const data = adminData();
+  const view = state.adminView || 'home';
+  const requestCount = data.requests.filter((item) => !['done'].includes(item.status)).length;
+  return shell(`<main class="admin-app">
+    <header class="admin-topbar"><div class="admin-topbar__context"><span>MIRS / ADMINISTRATION</span><b>${tr('Poste de pilotage', 'Control room')}</b></div><div class="admin-topbar__actions"><span class="admin-local-state"><i></i>${tr('Données locales', 'Local data')}</span><a href="${pageHref('/') }" data-link>${tr('Retour au site', 'Return to site')}</a><a href="${alternateLanguageHref()}" data-link>${state.locale === 'fr' ? 'EN' : 'FR'}</a><button type="button" data-admin-logout>${tr('Déconnexion', 'Sign out')}</button><button type="button" data-theme aria-label="${tr('Changer de thème', 'Change theme')}">◐</button></div></header>
+    <div class="admin-layout">
+      <aside class="admin-sidebar"><a href="${pageHref('/admin')}" data-link class="admin-sidebar__brand">${brandMark()}<span><b>MIRS</b><small>SPATIAL SYSTEMS</small></span></a><div class="admin-sidebar__label">${tr('ESPACES DE GESTION', 'MANAGEMENT SPACES')}</div><nav class="admin-nav" aria-label="${tr('Navigation administration', 'Administration navigation')}">${Object.entries(labels).map(([key, label]) => `<button type="button" data-admin-view="${key}" aria-current="${view === key ? 'page' : 'false'}"><span class="admin-nav__icon"></span><b>${label}</b>${key === 'services' && requestCount ? `<small>${requestCount}</small>` : ''}</button>`).join('')}</nav><div class="admin-sidebar__foot"><span>${tr('MIRS · Conakry', 'MIRS · Conakry')}</span><small>${tr('Espace de travail local', 'Local workspace')}</small></div></aside>
+      <section class="admin-main">${adminViewHeading(view)}${adminViewMarkup(view, data)}</section>
+    </div>
+    <dialog class="admin-dialog" data-admin-dialog><form method="dialog" data-admin-content-form><div class="admin-dialog__head"><div><span>${tr('ÉDITION DE CONTENU', 'CONTENT EDITOR')}</span><h2>${tr('Mettre à jour une page.', 'Update a page.')}</h2></div><button type="button" data-admin-close-dialog aria-label="${tr('Fermer', 'Close')}">×</button></div><input type="hidden" name="id"><label>${tr('Zone', 'Area')}<input name="areaFr" required placeholder="Accueil MIRS"></label><label>${tr('Area in English', 'English area')}<input name="areaEn" required placeholder="MIRS home"></label><div class="admin-dialog__grid"><label>${tr('Titre FR', 'FR title')}<input name="titleFr" required></label><label>${tr('Titre EN', 'EN title')}<input name="titleEn" required></label></div><label>${tr('Statut', 'Status')}<select name="status"><option value="published">${tr('Publié', 'Published')}</option><option value="review">${tr('À relire', 'Review')}</option><option value="draft">${tr('Brouillon', 'Draft')}</option></select></label><div class="admin-dialog__actions"><button type="button" class="admin-action-button" data-admin-close-dialog>${tr('Annuler', 'Cancel')}</button><button type="submit" class="admin-action-button admin-action-button--accent">${tr('Enregistrer', 'Save')}</button></div></form></dialog>
+    <dialog class="admin-dialog" data-admin-training-dialog><form method="dialog" data-admin-training-form><div class="admin-dialog__head"><div><span>${tr('MIRS ACADEMY', 'MIRS ACADEMY')}</span><h2>${tr('Créer un module.', 'Create a module.')}</h2></div><button type="button" data-admin-close-dialog aria-label="${tr('Fermer', 'Close')}">×</button></div><div class="admin-dialog__grid"><label>${tr('Nom FR', 'FR name')}<input name="nameFr" required placeholder="Réseaux & systèmes"></label><label>${tr('Nom EN', 'EN name')}<input name="nameEn" required placeholder="Networks & systems"></label></div><div class="admin-dialog__grid"><label>${tr('Catégorie FR', 'FR category')}<input name="categoryFr" required placeholder="Déployer et administrer"></label><label>${tr('Catégorie EN', 'EN category')}<input name="categoryEn" required placeholder="Deploy and administer"></label></div><label>${tr('Statut', 'Status')}<select name="status"><option value="draft">${tr('Brouillon', 'Draft')}</option><option value="published">${tr('Publié', 'Published')}</option></select></label><div class="admin-dialog__actions"><button type="button" class="admin-action-button" data-admin-close-dialog>${tr('Annuler', 'Cancel')}</button><button type="submit" class="admin-action-button admin-action-button--accent">${tr('Enregistrer', 'Save')}</button></div></form></dialog>
   </main>`, '/admin');
 }
 
@@ -770,6 +991,12 @@ function bind() {
       document.documentElement.dataset.theme = state.theme;
       return;
     }
+    if (event.target.closest('[data-admin-logout]')) {
+      adminLogout();
+      state.adminView = 'home';
+      renderRoute(location.pathname, { preserveScroll: true });
+      return;
+    }
     if (event.target.closest('[data-menu]')) {
       const menu = document.querySelector('[data-mobile-menu]');
       const button = document.querySelector('[data-menu]');
@@ -811,6 +1038,90 @@ function bind() {
       });
       return;
     }
+    const adminViewButton = event.target.closest('[data-admin-view]');
+    if (adminViewButton) {
+      state.adminView = adminViewButton.dataset.adminView || 'home';
+      renderRoute(location.pathname, { preserveScroll: true });
+      return;
+    }
+    const adminEdit = event.target.closest('[data-admin-edit="content"]');
+    if (adminEdit) {
+      const record = adminData().content.find((item) => item.id === adminEdit.dataset.adminId);
+      const dialog = document.querySelector('[data-admin-dialog]');
+      const form = dialog?.querySelector('[data-admin-content-form]');
+      if (record && dialog && form) {
+        form.elements.id.value = record.id;
+        form.elements.areaFr.value = record.area.fr;
+        form.elements.areaEn.value = record.area.en;
+        form.elements.titleFr.value = record.title.fr;
+        form.elements.titleEn.value = record.title.en;
+        form.elements.status.value = record.status;
+        dialog.showModal();
+      }
+      return;
+    }
+    const adminAction = event.target.closest('[data-admin-action]');
+    if (adminAction?.dataset.adminAction === 'new-content') {
+      const dialog = document.querySelector('[data-admin-dialog]');
+      const form = dialog?.querySelector('[data-admin-content-form]');
+      if (dialog && form) {
+        form.reset();
+        form.elements.id.value = '';
+        form.elements.status.value = 'draft';
+        dialog.showModal();
+      }
+      return;
+    }
+    if (adminAction?.dataset.adminAction === 'new-training') {
+      const dialog = document.querySelector('[data-admin-training-dialog]');
+      const form = dialog?.querySelector('[data-admin-training-form]');
+      if (dialog && form) {
+        form.reset();
+        form.elements.status.value = 'draft';
+        dialog.showModal();
+      }
+      return;
+    }
+    if (adminAction?.dataset.adminAction === 'reset') {
+      if (window.confirm(tr('Réinitialiser les données locales du dashboard ?', 'Reset local dashboard data?'))) {
+        saveAdminData(adminSeed());
+        renderRoute(location.pathname, { preserveScroll: true });
+      }
+      return;
+    }
+    const closeAdminDialog = event.target.closest('[data-admin-close-dialog]');
+    if (closeAdminDialog) {
+      closeAdminDialog.closest('dialog')?.close();
+      return;
+    }
+    const trainingToggle = event.target.closest('[data-admin-toggle-training]');
+    if (trainingToggle) {
+      const data = adminData();
+      const course = data.training.find((item) => item.id === trainingToggle.dataset.adminToggleTraining);
+      if (course) course.status = course.status === 'published' ? 'draft' : 'published';
+      saveAdminData(data);
+      renderRoute(location.pathname, { preserveScroll: true });
+      return;
+    }
+    const mediaToggle = event.target.closest('[data-admin-toggle-media]');
+    if (mediaToggle) {
+      const data = adminData();
+      const media = data.media.find((item) => item.id === mediaToggle.dataset.adminToggleMedia);
+      if (media) media.status = media.status === 'published' ? 'draft' : 'published';
+      saveAdminData(data);
+      renderRoute(location.pathname, { preserveScroll: true });
+      return;
+    }
+    const productToggle = event.target.closest('[data-admin-product]');
+    if (productToggle) {
+      const data = adminData();
+      const [mode, rawIndex] = productToggle.dataset.adminProduct.split(':');
+      const index = Number(rawIndex);
+      if (Array.isArray(data.inventory[mode])) data.inventory[mode][index] = data.inventory[mode][index] === false;
+      saveAdminData(data);
+      renderRoute(location.pathname, { preserveScroll: true });
+      return;
+    }
     const adminTab = event.target.closest('[data-admin-tab]');
     if (adminTab) {
       const panel = adminTab.dataset.adminTab;
@@ -828,7 +1139,107 @@ function bind() {
     }
   }, { signal });
 
+  root.addEventListener('input', (event) => {
+    const search = event.target.closest('[data-admin-search]');
+    if (!search) return;
+    const value = search.value.trim().toLowerCase();
+    const scope = search.dataset.adminSearch;
+    root.querySelectorAll(`[data-admin-row="${scope}"]`).forEach((row) => {
+      row.hidden = value && !row.dataset.searchText.includes(value);
+    });
+  }, { signal });
+
+  root.addEventListener('change', (event) => {
+    const statusSelect = event.target.closest('[data-admin-request-status]');
+    if (statusSelect) {
+      const data = adminData();
+      const request = data.requests.find((item) => item.id === statusSelect.dataset.adminRequestStatus);
+      if (request) {
+        request.status = statusSelect.value;
+        request.updated = new Date().toLocaleDateString('fr-FR').replaceAll('/', '.');
+      }
+      saveAdminData(data);
+      renderRoute(location.pathname, { preserveScroll: true });
+      return;
+    }
+    const setting = event.target.closest('[data-admin-setting]');
+    if (setting) {
+      const data = adminData();
+      data.settings[setting.dataset.adminSetting] = setting.checked;
+      saveAdminData(data);
+      renderRoute(location.pathname, { preserveScroll: true });
+    }
+  }, { signal });
+
   root.addEventListener('submit', (event) => {
+    const loginForm = event.target.closest('[data-admin-login]');
+    if (loginForm) {
+      event.preventDefault();
+      const formData = new FormData(loginForm);
+      const username = String(formData.get('username') || '').trim();
+      const password = String(formData.get('password') || '');
+      const status = loginForm.querySelector('[data-admin-login-status]');
+      if (username === ADMIN_USERNAME && password === ADMIN_PASSWORD) {
+        try {
+          sessionStorage.setItem(ADMIN_SESSION_KEY, 'authenticated');
+        } catch {
+          if (status) status.textContent = tr('La session ne peut pas être enregistrée dans ce navigateur.', 'This browser cannot store the session.');
+          return;
+        }
+        state.adminView = 'home';
+        renderRoute(location.pathname, { preserveScroll: true });
+      } else if (status) {
+        status.textContent = tr('Identifiant ou mot de passe incorrect.', 'Incorrect username or password.');
+        loginForm.classList.remove('is-invalid');
+        requestAnimationFrame(() => loginForm.classList.add('is-invalid'));
+        loginForm.elements.password.value = '';
+        loginForm.elements.username.focus();
+      }
+      return;
+    }
+    const trainingForm = event.target.closest('[data-admin-training-form]');
+    if (trainingForm) {
+      event.preventDefault();
+      const formData = new FormData(trainingForm);
+      const data = adminData();
+      data.training.push({
+        id: `course-${Date.now()}`,
+        name: { fr: String(formData.get('nameFr') || '').trim(), en: String(formData.get('nameEn') || '').trim() },
+        category: { fr: String(formData.get('categoryFr') || '').trim(), en: String(formData.get('categoryEn') || '').trim() },
+        status: String(formData.get('status') || 'draft'),
+        sessions: 0,
+        learners: 0,
+        capacity: 18,
+      });
+      saveAdminData(data);
+      document.querySelector('[data-admin-training-dialog]')?.close();
+      state.adminView = 'training';
+      renderRoute(location.pathname, { preserveScroll: true });
+      return;
+    }
+    const adminForm = event.target.closest('[data-admin-content-form]');
+    if (adminForm) {
+      event.preventDefault();
+      const formData = new FormData(adminForm);
+      const data = adminData();
+      const id = String(formData.get('id') || '').trim() || `content-${Date.now()}`;
+      const record = {
+        id,
+        area: { fr: String(formData.get('areaFr') || '').trim(), en: String(formData.get('areaEn') || '').trim() },
+        type: { fr: tr('Page', 'Page'), en: 'Page' },
+        title: { fr: String(formData.get('titleFr') || '').trim(), en: String(formData.get('titleEn') || '').trim() },
+        status: String(formData.get('status') || 'draft'),
+        updated: new Date().toLocaleDateString('fr-FR').replaceAll('/', '.'),
+      };
+      const existing = data.content.findIndex((item) => item.id === id);
+      if (existing >= 0) data.content[existing] = { ...data.content[existing], ...record };
+      else data.content.unshift(record);
+      saveAdminData(data);
+      document.querySelector('[data-admin-dialog]')?.close();
+      state.adminView = 'content';
+      renderRoute(location.pathname, { preserveScroll: true });
+      return;
+    }
     const form = event.target.closest('[data-contact-form]');
     if (!form) return;
     event.preventDefault();
