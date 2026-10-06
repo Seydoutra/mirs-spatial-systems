@@ -1,3 +1,5 @@
+import { academyCourses, storeCategories, storeProducts, SESSIONS_NOTE } from './mirs-data.js?v=nova-2';
+
 const BASE_PATH = new URL('.', document.baseURI).pathname.replace(/\/$/, '');
 const AS = `${BASE_PATH}/assets/`;
 
@@ -26,14 +28,19 @@ function pageRoute(path = location.pathname) {
 function storedCart() {
   try {
     const saved = JSON.parse(localStorage.getItem('mirs-future-cart') || '[]');
-    return Array.isArray(saved) ? saved.filter((item) => typeof item === 'string').slice(0, 50) : [];
+    if (!Array.isArray(saved)) return [];
+    return saved
+      .map((item) => (typeof item === 'string' ? { key: `brief:${item}`, name: item, qty: 1, kind: 'brief' } : item))
+      .filter((item) => item && typeof item.name === 'string' && typeof item.key === 'string')
+      .map((item) => ({ ...item, qty: Math.max(1, Math.min(999, Math.round(Number(item.qty) || 1))) }))
+      .slice(0, 60);
   } catch {
     return [];
   }
 }
 
 const state = {
-  theme: localStorage.getItem('mirs-future-theme') || 'dark',
+  theme: (() => { try { return localStorage.getItem('mirs-future-theme') || 'dark'; } catch { return 'dark'; } })(),
   cart: storedCart(),
   locale: 'fr',
   adminView: 'home',
@@ -42,14 +49,10 @@ const state = {
 const tr = (fr, en) => state.locale === 'en' ? en : fr;
 const local = (value) => typeof value === 'string' ? value : (value?.[state.locale] || value?.fr || '');
 const alternateLanguageHref = () => pageHref(pageRoute(), state.locale === 'fr' ? 'en' : 'fr');
+const searchKey = (value) => String(value || '').toLowerCase().normalize('NFD').replace(/[\u0300-\u036f]/g, '').replace(/[^a-z0-9]+/g, '');
+const escapeHtml = (value) => String(value ?? '').replace(/[&<>"']/g, (char) => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' }[char]));
 
 const products = {
-  tech: [
-    { name: { fr: 'Poste de travail', en: 'Workstation' }, category: { fr: 'infrastructure', en: 'infrastructure' }, categoryKey: 'infrastructure', image: 'editorial/equipement-clavier.jpg', detail: { fr: 'Configuration, équipement et mise en service.', en: 'Configuration, equipment and deployment.' } },
-    { name: { fr: 'Réseau & Wi-Fi', en: 'Network & Wi-Fi' }, category: { fr: 'infrastructure', en: 'infrastructure' }, categoryKey: 'infrastructure', image: 'editorial/maintenance-pc.jpg', detail: { fr: 'Connecter les équipes sans créer de complexité.', en: 'Connect teams without adding complexity.' } },
-    { name: { fr: 'Cybersécurité', en: 'Cybersecurity' }, category: { fr: 'protection', en: 'protection' }, categoryKey: 'protection', image: 'future/informatique-team.jpg', detail: { fr: 'Clarifier les priorités avant de protéger.', en: 'Clarify priorities before protecting.' } },
-    { name: { fr: 'Maintenance IT', en: 'IT maintenance' }, category: { fr: 'assistance', en: 'support' }, categoryKey: 'support', image: 'editorial/maintenance-pc.jpg', detail: { fr: 'Un suivi technique conçu pour la continuité.', en: 'Technical support designed for continuity.' } },
-  ],
   print: [
     { name: { fr: 'Polo personnalisé', en: 'Custom polo shirt' }, category: { fr: 'textile', en: 'textile' }, categoryKey: 'textile', image: 'mirs-media/nimba-polo-transparent.png', detail: { fr: 'Textile de communication produit par notre atelier.', en: 'Branded textile produced by our workshop.' } },
     { name: { fr: 'Casquette personnalisée', en: 'Custom cap' }, category: { fr: 'textile', en: 'textile' }, categoryKey: 'textile', image: 'mirs-media/sonapi-cap-transparent.png', detail: { fr: 'Une série personnalisée pour vos équipes et événements.', en: 'A personalized series for teams and events.' } },
@@ -59,13 +62,7 @@ const products = {
   ],
 };
 
-const courses = [
-  { name: 'AMADEUS', category: { fr: 'Voyage & réservation', en: 'Travel and booking operations' }, detail: { fr: 'Outiller les équipes opérationnelles sur les usages métier.', en: 'Equip operational teams for day-to-day business use.' } },
-  { name: { fr: 'Réseaux & systèmes', en: 'Networks & systems' }, category: { fr: 'Déployer et administrer', en: 'Deploy and administer' }, detail: { fr: 'Concevoir une base technique lisible et maîtrisable.', en: 'Build a clear, maintainable technical foundation.' } },
-  { name: 'Microsoft Office', category: { fr: 'Produire efficacement', en: 'Work efficiently' }, detail: { fr: 'Créer des habitudes de travail simples et solides.', en: 'Create simple, reliable working habits.' } },
-  { name: { fr: 'Marketing digital', en: 'Digital marketing' }, category: { fr: 'Structurer la visibilité', en: 'Build digital visibility' }, detail: { fr: 'Mettre l’identité et le message au bon endroit.', en: 'Place identity and messaging where they matter.' } },
-  { name: 'Live coding', category: { fr: 'Concevoir par la pratique', en: 'Build through practice' }, detail: { fr: 'Passer de l’idée à un système qui fonctionne.', en: 'Move from an idea to a functioning system.' } },
-];
+const courses = academyCourses.map((course) => ({ name: course.name, category: course.category, detail: course.summary }));
 
 const universes = [
   { path: '/informatique', key: 'informatique', index: '01', signal: 'INFRASTRUCTURE', name: { fr: 'Informatique', en: 'Information technology' }, title: { fr: 'Des systèmes plus <em>fiables.</em>', en: 'More <em>reliable</em> systems.' }, detail: { fr: 'Infrastructure, réseau, cybersécurité et assistance pour sécuriser la continuité de vos activités.', en: 'Infrastructure, networking, cybersecurity and support for business continuity.' }, image: 'future/informatique-team.jpg', className: 'tech' },
@@ -75,72 +72,124 @@ const universes = [
   { path: '/maintenance', key: 'maintenance', index: '05', signal: 'CONTINUITÉ', name: { fr: 'Maintenance', en: 'Maintenance' }, title: { fr: 'Préserver ce qui <em>fonctionne.</em>', en: 'Keep what <em>works.</em>' }, detail: { fr: 'Prévention, intervention et suivi pour préserver la disponibilité de vos environnements.', en: 'Prevention, intervention and follow-up to preserve system availability.' }, image: 'editorial/maintenance-pc.jpg', className: 'maintenance' },
 ];
 
-const ADMIN_STORAGE_KEY = 'mirs-admin-workspace-v1';
+const ADMIN_STORAGE_KEY = 'mirs-admin-workspace-v2';
+const LEGACY_ADMIN_STORAGE_KEY = 'mirs-admin-workspace-v1';
 const ADMIN_SESSION_KEY = 'mirs-admin-session-v1';
 const ADMIN_USERNAME = 'adminmirs';
 const ADMIN_PASSWORD = 'admin';
 
+const todayStamp = () => new Date().toLocaleDateString('fr-FR').replaceAll('/', '.');
+const isoToday = () => new Date().toISOString().slice(0, 10);
+
 function adminSeed() {
   return {
     content: [
-      { id: 'home', area: { fr: 'Accueil MIRS', en: 'MIRS home' }, type: { fr: 'Page', en: 'Page' }, title: { fr: 'Des solutions intégrées qui font avancer.', en: 'Integrated solutions for performance.' }, status: 'published', updated: '05.10.2026' },
+      { id: 'home', area: { fr: 'Accueil MIRS', en: 'MIRS home' }, type: { fr: 'Page', en: 'Page' }, title: { fr: 'Des solutions intégrées qui font avancer.', en: 'Integrated solutions for performance.' }, status: 'published', updated: '06.10.2026' },
+      { id: 'amadeus', area: { fr: 'AMADEUS · Représentation exclusive', en: 'AMADEUS · Exclusive representation' }, type: { fr: 'Page', en: 'Page' }, title: { fr: 'MIRS, représentant exclusif d’AMADEUS.', en: 'MIRS, exclusive AMADEUS representative.' }, status: 'published', updated: '06.10.2026' },
+      { id: 'formation', area: { fr: 'MIRS Academy · E-learning', en: 'MIRS Academy · E-learning' }, type: { fr: 'Catalogue', en: 'Catalogue' }, title: { fr: 'Apprendre, puis savoir faire.', en: 'Learn. Apply. Perform.' }, status: 'published', updated: '06.10.2026' },
+      { id: 'boutique', area: { fr: 'Boutique informatique', en: 'IT store' }, type: { fr: 'E-commerce', en: 'E-commerce' }, title: { fr: 'L’équipement informatique, sur devis.', en: 'IT equipment, on quotation.' }, status: 'published', updated: '06.10.2026' },
+      { id: 'maintenance', area: { fr: 'Maintenance & urgences', en: 'Maintenance & emergencies' }, type: { fr: 'Page', en: 'Page' }, title: { fr: 'Préserver ce qui fonctionne.', en: 'Keep what works.' }, status: 'published', updated: '06.10.2026' },
       { id: 'informatique', area: { fr: 'Univers · Informatique', en: 'Capability · IT' }, type: { fr: 'Univers', en: 'Capability' }, title: { fr: 'Des systèmes plus fiables.', en: 'More reliable systems.' }, status: 'published', updated: '04.10.2026' },
       { id: 'imprimerie', area: { fr: 'Univers · Imprimerie', en: 'Capability · Print' }, type: { fr: 'Univers', en: 'Capability' }, title: { fr: 'Une marque qui se voit.', en: 'A brand that is seen.' }, status: 'published', updated: '04.10.2026' },
-      { id: 'formation', area: { fr: 'Univers · MIRS Academy', en: 'Capability · MIRS Academy' }, type: { fr: 'Univers', en: 'Capability' }, title: { fr: 'Des compétences qui restent.', en: 'Skills that last.' }, status: 'review', updated: '03.10.2026' },
       { id: 'creation-agence', area: { fr: 'Univers · Création d’agence de voyage', en: 'Capability · Travel agency creation' }, type: { fr: 'Univers', en: 'Capability' }, title: { fr: 'Une agence prête à opérer.', en: 'An agency ready to operate.' }, status: 'published', updated: '02.10.2026' },
-      { id: 'maintenance', area: { fr: 'Univers · Maintenance', en: 'Capability · Maintenance' }, type: { fr: 'Univers', en: 'Capability' }, title: { fr: 'Préserver ce qui fonctionne.', en: 'Keep what works.' }, status: 'review', updated: '02.10.2026' },
     ],
     requests: [
-      { id: 'REQ-104', customer: 'Nimba SMS', service: 'Imprimerie', detail: 'Polos et casquettes pour une équipe terrain.', priority: 'high', status: 'new', updated: '04.10.2026' },
-      { id: 'REQ-103', customer: 'Groupe Amara', service: 'Informatique', detail: 'Mise à niveau réseau et postes de travail.', priority: 'normal', status: 'analysis', updated: '03.10.2026' },
-      { id: 'REQ-102', customer: 'Cabinet Horizon', service: 'Formation', detail: 'Parcours Microsoft Office pour 12 collaborateurs.', priority: 'normal', status: 'quote', updated: '02.10.2026' },
-      { id: 'REQ-101', customer: 'Atelier Koba', service: 'Maintenance', detail: 'Contrat de suivi préventif des équipements.', priority: 'high', status: 'progress', updated: '01.10.2026' },
-      { id: 'REQ-100', customer: 'Studio Sira', service: 'Création d’agence de voyage', detail: 'Positionnement, identité et cadre de lancement.', priority: 'normal', status: 'done', updated: '29.09.2026' },
+      { id: 'REQ-104', type: 'request', demo: true, customer: 'Nimba SMS', service: 'Imprimerie', detail: 'Polos et casquettes pour une équipe terrain.', priority: 'high', status: 'new', updated: '04.10.2026' },
+      { id: 'REQ-103', type: 'request', demo: true, customer: 'Groupe Amara', service: 'Informatique', detail: 'Mise à niveau réseau et postes de travail.', priority: 'normal', status: 'analysis', updated: '03.10.2026' },
+      { id: 'REQ-101', type: 'request', demo: true, customer: 'Atelier Koba', service: 'Maintenance', detail: 'Contrat de suivi préventif des équipements.', priority: 'high', status: 'progress', updated: '01.10.2026' },
+      { id: 'REQ-100', type: 'request', demo: true, customer: 'Studio Sira', service: 'Création d’agence de voyage', detail: 'Positionnement, identité et cadre de lancement.', priority: 'normal', status: 'done', updated: '29.09.2026' },
     ],
-    training: courses.map((course, index) => ({
-      id: `course-${index}`,
-      name: course.name,
-      category: course.category,
-      status: index === 4 ? 'draft' : 'published',
-      sessions: index === 4 ? 0 : index + 1,
-      learners: [18, 12, 24, 9, 0][index],
-      capacity: [24, 18, 30, 16, 18][index],
-    })),
+    courses: {},
+    extraSessions: [],
+    inventory: {},
     media: [
-      { id: 'company-film', name: { fr: 'Présentation de MIRS', en: 'MIRS company film' }, type: { fr: 'Vidéo · Institutionnel', en: 'Video · Corporate' }, file: 'mirs-media/mirs-company-presentation.mp4', status: 'published', updated: '05.10.2026' },
-      { id: 'print-film', name: { fr: 'Présentation de l’imprimerie', en: 'Print workshop film' }, type: { fr: 'Vidéo · Imprimerie', en: 'Video · Print workshop' }, file: 'mirs-media/mirs-print-presentation.mp4', status: 'published', updated: '05.10.2026' },
-      { id: 'digital-film', name: { fr: 'Animation MacBook', en: 'MacBook motion' }, type: { fr: 'Vidéo · Digital', en: 'Video · Digital' }, file: 'mirs-media/mirs-macbook-motion.mp4', status: 'published', updated: '04.10.2026' },
+      { id: 'company-film', name: { fr: 'Présentation de MIRS', en: 'MIRS company film' }, type: { fr: 'Vidéo · Institutionnel', en: 'Video · Corporate' }, file: 'mirs-media/mirs-company-presentation.mp4', poster: 'mirs-media/posters/company.jpg', status: 'published', updated: '05.10.2026' },
+      { id: 'print-film', name: { fr: 'Présentation de l’imprimerie', en: 'Print workshop film' }, type: { fr: 'Vidéo · Imprimerie', en: 'Video · Print workshop' }, file: 'mirs-media/mirs-print-presentation.mp4', poster: 'mirs-media/posters/print.jpg', status: 'published', updated: '05.10.2026' },
+      { id: 'digital-film', name: { fr: 'Animation MacBook', en: 'MacBook motion' }, type: { fr: 'Vidéo · Digital', en: 'Video · Digital' }, file: 'mirs-media/mirs-macbook-motion.mp4', poster: 'mirs-media/posters/macbook.jpg', status: 'published', updated: '04.10.2026' },
     ],
-    inventory: {
-      tech: products.tech.map(() => true),
-      print: products.print.map(() => true),
-    },
     settings: { maintenance: false, publicRequests: true, bilingual: true },
   };
 }
 
-function adminData() {
-  const fallback = adminSeed();
+function readStoredAdmin() {
   try {
     const saved = JSON.parse(localStorage.getItem(ADMIN_STORAGE_KEY) || 'null');
-    if (!saved || typeof saved !== 'object') return fallback;
-    return {
-      ...fallback,
-      ...saved,
-      content: Array.isArray(saved.content) ? saved.content : fallback.content,
-      requests: Array.isArray(saved.requests) ? saved.requests : fallback.requests,
-      training: Array.isArray(saved.training) ? saved.training : fallback.training,
-      media: Array.isArray(saved.media) ? saved.media : fallback.media,
-      inventory: { ...fallback.inventory, ...(saved.inventory || {}) },
-      settings: { ...fallback.settings, ...(saved.settings || {}) },
-    };
+    if (saved && typeof saved === 'object') return saved;
+    const legacy = JSON.parse(localStorage.getItem(LEGACY_ADMIN_STORAGE_KEY) || 'null');
+    if (legacy && typeof legacy === 'object') {
+      return {
+        requests: Array.isArray(legacy.requests) ? legacy.requests.map((item) => ({ type: 'request', ...item })) : undefined,
+        settings: legacy.settings,
+      };
+    }
   } catch {
-    return fallback;
+    // Unreadable storage falls back to the seed below.
   }
+  return null;
+}
+
+function adminData() {
+  const fallback = adminSeed();
+  const saved = readStoredAdmin();
+  if (!saved) return fallback;
+  const savedContent = Array.isArray(saved.content) ? saved.content : [];
+  const content = [...savedContent, ...fallback.content.filter((item) => !savedContent.some((entry) => entry.id === item.id))];
+  return {
+    ...fallback,
+    ...saved,
+    content,
+    requests: Array.isArray(saved.requests) ? saved.requests : fallback.requests,
+    courses: { ...(saved.courses || {}) },
+    extraSessions: Array.isArray(saved.extraSessions) ? saved.extraSessions : [],
+    inventory: { ...(saved.inventory || {}) },
+    media: Array.isArray(saved.media) ? saved.media : fallback.media,
+    settings: { ...fallback.settings, ...(saved.settings || {}) },
+  };
 }
 
 function saveAdminData(data) {
-  localStorage.setItem(ADMIN_STORAGE_KEY, JSON.stringify(data));
+  try {
+    localStorage.setItem(ADMIN_STORAGE_KEY, JSON.stringify(data));
+  } catch {
+    // Storage can be full or blocked; the public flow still reaches WhatsApp.
+  }
+}
+
+function makeReference(prefix) {
+  const date = new Date();
+  const stamp = `${String(date.getFullYear()).slice(2)}${String(date.getMonth() + 1).padStart(2, '0')}${String(date.getDate()).padStart(2, '0')}`;
+  return `${prefix}-${stamp}-${String(Math.floor(Math.random() * 9000) + 1000)}`;
+}
+
+/* Every public form lands in the admin queue (this browser) and opens WhatsApp. */
+function recordRequest(entry) {
+  const data = adminData();
+  const record = { status: 'new', priority: 'normal', updated: todayStamp(), createdAt: new Date().toISOString(), ...entry };
+  data.requests.unshift(record);
+  saveAdminData(data);
+  return record;
+}
+
+function openWhatsApp(message) {
+  window.open(`https://wa.me/224622051321?text=${encodeURIComponent(message)}`, '_blank', 'noopener');
+}
+
+const isProductVisible = (key) => adminData().inventory[key] !== false;
+const isCoursePublished = (slug) => adminData().courses[slug]?.status !== 'draft';
+
+function courseSessions(course, data = adminData()) {
+  const extra = data.extraSessions.filter((session) => session.slug === course.slug);
+  return [...course.sessions, ...extra]
+    .filter((session) => session.date >= isoToday())
+    .sort((a, b) => a.date.localeCompare(b.date));
+}
+
+function formatDate(iso, style = 'long') {
+  const date = new Date(`${iso}T12:00:00`);
+  if (Number.isNaN(date.getTime())) return iso;
+  const options = style === 'short' ? { day: '2-digit', month: 'short' } : { weekday: 'short', day: 'numeric', month: 'long', year: 'numeric' };
+  const text = new Intl.DateTimeFormat(state.locale === 'en' ? 'en-GB' : 'fr-FR', options).format(date);
+  return style === 'short' ? text : text.charAt(0).toUpperCase() + text.slice(1);
 }
 
 function adminAuthenticated() {
@@ -157,10 +206,6 @@ function adminLogout() {
   } catch {
     // Private browsing can deny sessionStorage access; the guard remains closed.
   }
-}
-
-function adminLogin() {
-  return shell(`<main class="admin-auth"><section class="admin-auth__card"><div class="admin-auth__mark">${brandMark()}<span><b>MIRS</b><small>SPATIAL SYSTEMS</small></span></div><div class="admin-auth__intro"><span>${tr('MIRS / ADMINISTRATION', 'MIRS / ADMINISTRATION')}</span><h1>${tr('Accéder au<br><em>poste de pilotage.</em>', 'Access the<br><em>control room.</em>')}</h1><p>${tr('Un espace réservé pour administrer le contenu du site, les services, les formations et les boutiques MIRS.', 'A private workspace to manage MIRS site content, services, training and stores.')}</p></div><form class="admin-auth__form" data-admin-login><label>${tr('Identifiant', 'Username')}<input name="username" required autocomplete="username" placeholder="adminmirs"></label><label>${tr('Mot de passe', 'Password')}<input name="password" type="password" required autocomplete="current-password" placeholder="•••••"></label><button type="submit" class="admin-action-button admin-action-button--accent">${tr('Ouvrir l’administration', 'Open administration')} <span>↗</span></button><p class="admin-auth__status" data-admin-login-status aria-live="polite" role="status"></p></form><p class="admin-auth__security">${tr('Accès réservé à l’équipe MIRS.', 'Access reserved for the MIRS team.')}</p><a class="admin-auth__back" href="${pageHref('/')}" data-link>← ${tr('Retour au site public', 'Return to public site')}</a></section></main>`, '/admin');
 }
 
 const clientLogos = Array.from({ length: 81 }, (_, index) => `clients/${String(index + 1).padStart(2, '0')}.webp`);
@@ -206,18 +251,6 @@ const videoButton = (file, label, variant = 'ghost') => `<button type="button" c
 const eyebrow = (copy, index = '') => `<p class="nv-eyebrow" data-nv="fade">${index ? `<b>${index}</b>` : '<span aria-hidden="true"></span>'}${copy}</p>`;
 const sectionTitle = (copy, extra = '', tag = 'h2', attrs = '') => `<${tag} class="nv-title ${extra}" data-split ${attrs}>${copy}</${tag}>`;
 
-function logoCell(file) {
-  return `<figure class="nv-logo"><img src="${AS}${file}" alt="" loading="lazy" decoding="async"></figure>`;
-}
-
-function logoBands(compact = false) {
-  const groups = [clientLogos.slice(0, 27), clientLogos.slice(27, 54), clientLogos.slice(54, 81)];
-  const lanes = compact ? groups.slice(0, 2) : groups;
-  return `<div class="nv-logos ${compact ? 'is-compact' : ''}" aria-label="${tr('81 organisations accompagnées par MIRS', '81 organizations supported by MIRS')}">
-    ${lanes.map((group, index) => `<div class="nv-logos__lane" style="--dir:${index % 2 ? 'reverse' : 'normal'};--dur:${70 + index * 12}s"><div class="nv-logos__track">${[...group, ...group].map(logoCell).join('')}</div></div>`).join('')}
-  </div>`;
-}
-
 function brandMark() {
   return `<span class="brand-mark" aria-hidden="true"><img class="brand-logo brand-logo--color" src="${AS}mirs-logo.png" alt=""><img class="brand-logo brand-logo--white" src="${AS}mirs-media/mirs-logo-white-transparent.png" alt=""></span>`;
 }
@@ -233,9 +266,52 @@ function universeNames() {
 
 /* ---------------- Layout ---------------- */
 
+const ICON_MINUS = '<svg viewBox="0 0 24 24" aria-hidden="true"><path d="M5 12h14"/></svg>';
+const ICON_ALERT = '<svg viewBox="0 0 24 24" aria-hidden="true"><path d="M12 3 2 20h20L12 3z"/><path d="M12 10v4.5M12 17.5h.01"/></svg>';
+const ICON_PHONE = '<svg viewBox="0 0 24 24" aria-hidden="true"><path d="M5 3h4l2 5-2.5 1.5a11 11 0 0 0 6 6L16 13l5 2v4a2 2 0 0 1-2 2A17 17 0 0 1 3 5a2 2 0 0 1 2-2z"/></svg>';
+const ICON_CHECK = '<svg viewBox="0 0 24 24" aria-hidden="true"><path d="M5 12.5l4.5 4.5L19 7.5"/></svg>';
+const ICON_CART = '<svg viewBox="0 0 24 24" aria-hidden="true"><path d="M3 4h2.5l2.2 10.5a1.5 1.5 0 0 0 1.5 1.2h8.6a1.5 1.5 0 0 0 1.5-1.1L21 8H6.3"/><circle cx="9.5" cy="19.5" r="1.3"/><circle cx="17" cy="19.5" r="1.3"/></svg>';
+
+const DEVICE_ICONS = {
+  laptop: '<rect x="4" y="5" width="16" height="11" rx="1.5"/><path d="M2 19h20M10 16.5h4"/>',
+  desktop: '<rect x="2.5" y="4" width="13" height="10" rx="1.5"/><path d="M9 14v3M5.5 17.5h7"/><rect x="18" y="4" width="3.5" height="14" rx="1"/><path d="M19.75 7h.01"/>',
+  monitor: '<rect x="2.5" y="4" width="19" height="12" rx="1.5"/><path d="M12 16v3M8 20h8"/>',
+  printer: '<path d="M7 9V3.5h10V9"/><rect x="3" y="9" width="18" height="8" rx="1.5"/><path d="M7 14h10v6.5H7z"/><path d="M17.5 12h.01"/>',
+  keyboard: '<rect x="2" y="7" width="20" height="10" rx="1.5"/><path d="M6 10.5h.01M9 10.5h.01M12 10.5h.01M15 10.5h.01M18 10.5h.01M7 14h10"/>',
+  router: '<rect x="3" y="13" width="18" height="6" rx="1.5"/><path d="M7 16h.01M10 16h.01M17 13V9M9 9.5a4.5 4.5 0 0 1 6 0M6.5 7a8 8 0 0 1 11 0"/>',
+  switch: '<rect x="2" y="8" width="20" height="8" rx="1.5"/><path d="M5 12h1.5M8.5 12H10M12 12h1.5M15.5 12H17M19 12h.01"/>',
+  cable: '<path d="M4.5 19c0-6 3.5-7.5 7.5-7.5S19.5 10 19.5 5"/><rect x="2.5" y="18" width="4" height="3.5" rx=".5"/><rect x="17.5" y="2.5" width="4" height="3.5" rx=".5"/>',
+  camera: '<path d="M3 7h11l3 3v4l-3 3H3z"/><circle cx="8.5" cy="12" r="2.5"/><path d="M17 11l4-2.5v7L17 13"/>',
+  shield: '<path d="M12 3l8 3v6c0 4.5-3.4 8-8 9-4.6-1-8-4.5-8-9V6z"/><path d="M8.5 12l2.5 2.5 4.5-5"/>',
+  battery: '<rect x="3" y="7" width="16" height="10" rx="1.5"/><path d="M21 10.5v3M11.5 8.5l-2.5 4h3.5l-2.5 4"/>',
+  server: '<rect x="4" y="3" width="16" height="7" rx="1.5"/><rect x="4" y="14" width="16" height="7" rx="1.5"/><path d="M8 6.5h.01M8 17.5h.01M12 6.5h4M12 17.5h4"/>',
+  chip: '<rect x="6" y="6" width="12" height="12" rx="1.5"/><rect x="9.5" y="9.5" width="5" height="5"/><path d="M9 2.5V6M15 2.5V6M9 18v3.5M15 18v3.5M2.5 9H6M2.5 15H6M18 9h3.5M18 15h3.5"/>',
+  tools: '<path d="M14.5 6.5a4 4 0 0 0-5.3 5.3L3.5 17.5l3 3 5.7-5.7a4 4 0 0 0 5.3-5.3l-2.5 2.5-2.5-.5-.5-2.5z"/>',
+};
+
+function deviceArt(icon, size = '') {
+  return `<div class="nv-device ${size}" aria-hidden="true"><span class="nv-device__grid"></span><span class="nv-device__halo"></span><svg viewBox="0 0 24 24">${DEVICE_ICONS[icon] || DEVICE_ICONS.chip}</svg></div>`;
+}
+
+/* Reference wall: every logo whole and readable (no cropping, no fade mask). */
+function logoWall(limit = 81) {
+  const visible = clientLogos.slice(0, limit);
+  const hidden = clientLogos.slice(limit);
+  return `<div class="nv-wall-wrap nv-wrap">
+    <ul class="nv-wall" aria-label="${tr('81 organisations accompagnées par MIRS', '81 organizations supported by MIRS')}">
+      ${visible.map((file, index) => `<li class="nv-wall__item" style="--i:${index % 9}"><img src="${AS}${file}" alt="" loading="lazy" decoding="async"></li>`).join('')}
+      ${hidden.map((file) => `<li class="nv-wall__item" data-logo-extra hidden><img src="${AS}${file}" alt="" loading="lazy" decoding="async"></li>`).join('')}
+    </ul>
+    ${hidden.length ? `<button type="button" class="nv-btn nv-btn--ghost nv-wall__more" data-logos-more data-magnetic>${roll(tr(`Afficher les ${clientLogos.length} références`, `Show all ${clientLogos.length} references`))}<i aria-hidden="true">${ICON_PLUS}</i></button>` : ''}
+  </div>`;
+}
+const logoBands = (compact = false) => logoWall(compact ? 27 : 81);
+
+const cartCount = () => state.cart.reduce((total, item) => total + item.qty, 0);
+
 function header() {
   const route = pageRoute();
-  const current = (path) => route === path ? ' aria-current="page"' : '';
+  const current = (path) => (route === path || route.startsWith(`${path}/`)) ? ' aria-current="page"' : '';
   return `<header class="nv-header" data-header>
     <a href="${pageHref('/')}" data-link class="nv-brand" aria-label="${tr('MIRS — accueil', 'MIRS — home')}">
       ${brandMark()}
@@ -243,15 +319,16 @@ function header() {
     </a>
     <nav class="nv-nav" aria-label="${tr('Navigation principale', 'Main navigation')}">
       <a href="${pageHref('/')}#univers" data-anchor="univers" data-scramble>${tr('Univers', 'Capabilities')}</a>
-      <a href="${pageHref('/realisations')}" data-link data-scramble${current('/realisations')}>${tr('Réalisations', 'Projects')}</a>
+      <a href="${pageHref('/amadeus')}" data-link class="nv-nav__amadeus"${current('/amadeus')}><span data-scramble>AMADEUS</span><small>${tr('Exclusif', 'Exclusive')}</small></a>
       <a href="${pageHref('/formation')}" data-link data-scramble${current('/formation')}>Academy</a>
-      <a href="${pageHref('/informatique/boutique')}" data-link data-scramble${current('/informatique/boutique')}>${tr('Boutiques', 'Stores')}</a>
-      <a href="${pageHref('/')}#references" data-anchor="references" data-scramble>${tr('Références', 'References')}</a>
+      <a href="${pageHref('/informatique/boutique')}" data-link data-scramble${current('/informatique/boutique')}>${tr('Boutique', 'Store')}</a>
+      <a href="${pageHref('/maintenance')}" data-link data-scramble${current('/maintenance')}>Maintenance</a>
+      <a href="${pageHref('/realisations')}" data-link data-scramble${current('/realisations')}>${tr('Réalisations', 'Projects')}</a>
     </nav>
     <div class="nv-header__actions">
       <a class="nv-chip" href="${alternateLanguageHref()}" data-link aria-label="${tr('Passer en anglais', 'Switch to French')}">${state.locale === 'fr' ? 'EN' : 'FR'}</a>
       <button type="button" class="nv-chip nv-chip--icon" data-theme aria-label="${tr('Changer de thème', 'Change theme')}" title="${tr('Changer de thème', 'Change theme')}"><span class="nv-theme-icon" aria-hidden="true"></span></button>
-      <button type="button" data-cart class="nv-chip nv-cart-chip" aria-label="${tr('Ouvrir la liste de projet', 'Open project list')}"><span>${tr('Brief', 'Brief')}</span><b data-cart-count>${state.cart.length}</b></button>
+      <button type="button" data-cart class="nv-chip nv-cart-chip" aria-label="${tr('Ouvrir le panier', 'Open cart')}"><i aria-hidden="true">${ICON_CART}</i><span>${tr('Panier', 'Cart')}</span><b data-cart-count>${cartCount()}</b></button>
       ${button('/contact', tr('Parler à MIRS', 'Talk to MIRS'), 'primary nv-btn--sm nv-header__cta')}
       <button type="button" class="nv-burger" data-menu aria-controls="nv-menu" aria-expanded="false"><span></span><span></span><span class="sr-only">Menu</span></button>
     </div>
@@ -260,10 +337,18 @@ function header() {
     <div class="nv-menu__bg" aria-hidden="true"></div>
     <nav class="nv-menu__inner" aria-label="${tr('Menu', 'Menu')}">
       <p class="nv-menu__label">${tr('NAVIGATION / MIRS', 'NAVIGATION / MIRS')}</p>
-      <a href="${pageHref('/')}" data-link style="--i:0"><small>00</small>${tr('Accueil', 'Home')}</a>
-      ${universes.map((unit, index) => `<a href="${pageHref(unit.path)}" data-link style="--i:${index + 1}"><small>${unit.index}</small>${local(unit.name)}</a>`).join('')}
-      <a href="${pageHref('/realisations')}" data-link style="--i:6"><small>06</small>${tr('Réalisations', 'Projects')}</a>
-      <a href="${pageHref('/contact')}" data-link style="--i:7"><small>07</small>Contact</a>
+      ${[
+        ['/', tr('Accueil', 'Home')],
+        ['/amadeus', tr('AMADEUS · exclusif', 'AMADEUS · exclusive')],
+        ['/formation', 'MIRS Academy'],
+        ['/informatique/boutique', tr('Boutique informatique', 'IT store')],
+        ['/maintenance', tr('Maintenance & urgence', 'Maintenance & emergency')],
+        ['/informatique', tr('Informatique', 'Information technology')],
+        ['/imprimerie', tr('Imprimerie', 'Print production')],
+        ['/creation-agence', tr('Création d’agence', 'Agency creation')],
+        ['/realisations', tr('Réalisations', 'Projects')],
+        ['/contact', 'Contact'],
+      ].map(([path, label], index) => `<a href="${pageHref(path)}" data-link style="--i:${index}"><small>${String(index).padStart(2, '0')}</small>${label}</a>`).join('')}
       <div class="nv-menu__foot"><a href="tel:+224622051321">+224 622 05 13 21</a><a href="https://wa.me/224622051321" target="_blank" rel="noreferrer">WhatsApp ↗</a><span>Conakry · Guinée</span></div>
     </nav>
   </div>`;
@@ -276,39 +361,53 @@ function footer() {
       <div class="nv-footer__intro">
         <a href="${pageHref('/')}" data-link class="nv-brand">${brandMark()}<span><b>MIRS</b><small>SPATIAL SYSTEMS</small></span></a>
         <p>${tr('Solutions intégrées pour les opérations, la visibilité et les compétences.', 'Integrated solutions for operations, visibility and capabilities.')}</p>
+        <a href="${pageHref('/amadeus')}" data-link class="nv-amadeus-pill"><i aria-hidden="true"></i>${tr('Représentant exclusif AMADEUS', 'Exclusive AMADEUS representative')}</a>
         ${button('/contact', tr('Démarrer un projet', 'Start a project'), 'primary')}
       </div>
-      <div class="nv-footer__col"><span>${tr('Univers', 'Capabilities')}</span>${universes.map((unit) => `<a href="${pageHref(unit.path)}" data-link data-scramble>${local(unit.name)}</a>`).join('')}</div>
-      <div class="nv-footer__col"><span>${tr('Explorer', 'Explore')}</span><a href="${pageHref('/realisations')}" data-link data-scramble>${tr('Réalisations', 'Projects')}</a><a href="${pageHref('/informatique/boutique')}" data-link data-scramble>${tr('Boutique informatique', 'IT store')}</a><a href="${pageHref('/imprimerie/boutique')}" data-link data-scramble>${tr('Boutique imprimerie', 'Print store')}</a><a href="${pageHref('/contact')}" data-link data-scramble>Contact</a></div>
-      <div class="nv-footer__col"><span>Conakry · Guinée</span><a href="tel:+224622051321">+224 622 05 13 21</a><a href="https://wa.me/224622051321" target="_blank" rel="noreferrer">WhatsApp ↗</a><p class="nv-clock"><i></i>${tr('Conakry', 'Conakry')} <b data-clock>--:--</b> GMT</p></div>
+      <div class="nv-footer__col"><span>${tr('Univers', 'Capabilities')}</span>${universes.map((unit) => `<a href="${pageHref(unit.path)}" data-link data-scramble>${local(unit.name)}</a>`).join('')}<a href="${pageHref('/amadeus')}" data-link data-scramble>AMADEUS</a></div>
+      <div class="nv-footer__col"><span>${tr('Explorer', 'Explore')}</span><a href="${pageHref('/informatique/boutique')}" data-link data-scramble>${tr('Boutique informatique', 'IT store')}</a><a href="${pageHref('/imprimerie/boutique')}" data-link data-scramble>${tr('Boutique imprimerie', 'Print store')}</a><a href="${pageHref('/formation')}" data-link data-scramble>${tr('Sessions Academy', 'Academy sessions')}</a><a href="${pageHref('/realisations')}" data-link data-scramble>${tr('Réalisations', 'Projects')}</a><a href="${pageHref('/contact')}" data-link data-scramble>Contact</a></div>
+      <div class="nv-footer__col"><span>Conakry · Guinée</span><a href="tel:+224622051321">+224 622 05 13 21</a><a href="https://wa.me/224622051321" target="_blank" rel="noreferrer">WhatsApp ↗</a><a href="${pageHref('/maintenance')}" data-link class="nv-footer__urgent"><i aria-hidden="true"></i>${tr('Intervention d’urgence', 'Emergency call-out')}</a><p class="nv-clock"><i></i>Conakry <b data-clock>--:--</b> GMT</p></div>
     </div>
     <div class="nv-footer__mark" data-progress aria-hidden="true"><span>MIRS</span></div>
     <div class="nv-footer__bottom nv-wrap"><span>© ${new Date().getFullYear()} MIRS Spatial Systems</span><span>${tr('Concevoir · Déployer · Accompagner', 'Design · Deploy · Support')}</span><a href="${pageHref('/admin')}" data-link>${tr('Administration', 'Administration')}</a><button type="button" class="nv-totop" data-totop aria-label="${tr('Revenir en haut', 'Back to top')}">↑</button></div>
   </footer>`;
 }
 
+function cartLine(item, index, compact = true) {
+  const stepper = `<div class="nv-qty" role="group" aria-label="${tr('Quantité', 'Quantity')}"><button type="button" data-cart-qty="${index}:-1" aria-label="${tr('Diminuer', 'Decrease')}">${ICON_MINUS}</button><b>${item.qty}</b><button type="button" data-cart-qty="${index}:1" aria-label="${tr('Augmenter', 'Increase')}">${ICON_PLUS}</button></div>`;
+  const art = item.icon ? deviceArt(item.icon, 'nv-device--xs') : `<span class="nv-line__tag">${item.kind === 'course' ? 'ACAD' : item.kind === 'print' ? 'PRINT' : 'MIRS'}</span>`;
+  return `<li class="nv-line" style="--i:${index}">
+    ${art}
+    <div class="nv-line__copy"><b>${escapeHtml(item.name)}</b>${item.option ? `<small>${escapeHtml(item.option)}</small>` : ''}${compact ? '' : `<small>${tr('Prix sur devis', 'Price on quotation')}</small>`}</div>
+    ${stepper}
+    <button type="button" class="nv-line__remove" data-remove="${index}" aria-label="${tr('Retirer', 'Remove')} ${escapeHtml(item.name)}">×</button>
+  </li>`;
+}
+
 function cartPanel() {
   const entries = state.cart.length
-    ? state.cart.map((item, index) => `<li style="--i:${index}"><small>${String(index + 1).padStart(2, '0')}</small><span>${item}</span><button type="button" data-remove="${index}" aria-label="${tr('Retirer', 'Remove')} ${item}">×</button></li>`).join('')
-    : `<li class="nv-drawer__empty">${tr('Votre liste est vide. Ajoutez une piste à explorer.', 'Your list is empty. Add something worth exploring.')}</li>`;
-  return `<div class="nv-drawer__head"><span>${tr('BRIEF', 'BRIEF')} / ${String(state.cart.length).padStart(2, '0')}</span><button type="button" data-close-cart aria-label="${tr('Fermer', 'Close')}">×</button></div>
-    <h2>${tr('Votre liste<br>de <em>départ.</em>', 'Your starting<br><em>list.</em>')}</h2>
-    <ul>${entries}</ul>
-    ${state.cart.length ? button('/checkout', tr('Préparer le brief', 'Prepare the brief'), 'primary') : `<p class="nv-drawer__note">${tr('Une offre, un support ou une formation : ajoutez ce qui mérite une conversation.', 'A service, a material or a course: add what deserves a conversation.')}</p>`}`;
+    ? state.cart.map((item, index) => cartLine(item, index)).join('')
+    : `<li class="nv-drawer__empty">${tr('Votre panier est vide. Ajoutez un équipement, un support ou une formation.', 'Your cart is empty. Add equipment, a print item or a course.')}</li>`;
+  return `<div class="nv-drawer__head"><span>${tr('PANIER', 'CART')} / ${String(cartCount()).padStart(2, '0')}</span><button type="button" data-close-cart aria-label="${tr('Fermer', 'Close')}">×</button></div>
+    <h2>${tr('Votre<br><em>panier.</em>', 'Your<br><em>cart.</em>')}</h2>
+    <ul class="nv-lines">${entries}</ul>
+    ${state.cart.length ? `<div class="nv-drawer__total"><span>${tr('Total', 'Total')}</span><b>${tr('Sur devis', 'On quotation')}</b><small>${tr('MIRS confirme le montant et la disponibilité.', 'MIRS confirms the amount and availability.')}</small></div>${button('/checkout', tr('Passer commande', 'Checkout'), 'primary nv-btn--block')}<button type="button" class="nv-drawer__continue" data-close-cart>${tr('Continuer mes achats', 'Continue shopping')}</button>` : `${button('/informatique/boutique', tr('Voir la boutique', 'Browse the store'), 'ghost')}`}`;
 }
 
 function overlays() {
   return `<div class="nv-scrim" data-close-cart></div>
-    <aside class="nv-drawer" data-cart-drawer aria-label="${tr('Liste de projet', 'Project list')}">${cartPanel()}</aside>
+    <aside class="nv-drawer" data-cart-drawer aria-label="${tr('Panier', 'Cart')}">${cartPanel()}</aside>
+    <div class="nv-toast" data-toast role="status" aria-live="polite"></div>
     <dialog class="nv-video" data-video-modal>
       <button type="button" class="nv-video__close" data-close-video aria-label="${tr('Fermer la vidéo', 'Close video')}">×</button>
       <div class="nv-video__body" data-video-body></div>
-    </dialog>`;
+    </dialog>
+    ${enrollDialog()}`;
 }
 
 function shell(content, route = '') {
   const isAdminRoute = route === '/admin';
-  if (isAdminRoute) return `<div class="site-shell route-admin">${content}</div>`;
+  if (isAdminRoute) return `<div class="site-shell nv nva route-admin">${content}</div>`;
   return `<div class="site-shell nv route-${route.replaceAll('/', '-').replace(/^-/, '') || 'home'}">
     <a class="nv-skip" href="#contenu">${tr('Aller au contenu', 'Skip to content')}</a>
     <div class="nv-progress" aria-hidden="true"><span data-scroll-meter></span></div>
@@ -319,6 +418,32 @@ function shell(content, route = '') {
     ${overlays()}
   </div>`;
 }
+
+/* Home: the exclusive AMADEUS representation, given its own stage. */
+function amadeusBand() {
+  const next = academyCourses.find((course) => course.amadeus);
+  const session = next ? courseSessions(next)[0] : null;
+  return `<section class="nv-amadeus-band" aria-labelledby="nv-amadeus-band-title">
+    <div class="nv-amadeus-band__inner nv-wrap" data-spot>
+      <div class="nv-amadeus-band__mark" aria-hidden="true"><span>AMADEUS</span><span>AMADEUS</span></div>
+      <div class="nv-amadeus-band__copy">
+        <p class="nv-amadeus-pill nv-amadeus-pill--lg"><i aria-hidden="true"></i>${tr('Représentant exclusif', 'Exclusive representative')}</p>
+        ${sectionTitle(tr('MIRS, représentant exclusif <em>d’AMADEUS.</em>', 'MIRS, the exclusive <em>AMADEUS</em> representative.'), 'nv-amadeus-band__title', 'h2', 'id="nv-amadeus-band-title"')}
+        <p data-nv="up">${tr('Accès à la solution, déploiement en agence, formation des équipes et assistance au quotidien : un seul interlocuteur pour travailler avec AMADEUS.', 'Access to the solution, agency deployment, team training and day-to-day support: one single partner to work with AMADEUS.')}</p>
+        <div class="nv-hero__actions" data-nv="up" style="--d:120ms">${button('/amadeus', tr('Découvrir l’offre AMADEUS', 'Discover the AMADEUS offer'), 'primary')}${button('/formation/amadeus', session ? tr(`Session du ${formatDate(session.date, 'short')}`, `Session on ${formatDate(session.date, 'short')}`) : tr('Formation AMADEUS', 'AMADEUS training'), 'ghost')}</div>
+      </div>
+      <ul class="nv-amadeus-band__pillars">
+        ${[
+          ['01', tr('Représentation', 'Representation'), tr('L’interlocuteur officiel pour accéder à AMADEUS.', 'The official partner to access AMADEUS.')],
+          ['02', tr('Déploiement', 'Deployment'), tr('Installation et paramétrage en agence.', 'Installation and set-up in your agency.')],
+          ['03', tr('Formation', 'Training'), tr('Des agents opérationnels sur le système.', 'Agents operational on the system.')],
+          ['04', tr('Assistance', 'Support'), tr('Un accompagnement au quotidien.', 'Day-to-day support.')],
+        ].map(([index, title, text], position) => `<li data-nv="up" style="--d:${position * 80}ms"><span>${index}</span><b>${title}</b><small>${text}</small></li>`).join('')}
+      </ul>
+    </div>
+  </section>`;
+}
+
 
 /* ---------------- Home ---------------- */
 
@@ -335,7 +460,7 @@ function homeProductCard(item, mode, index = 0) {
   const name = local(item.name);
   return `<article class="nv-product nv-product--${mode}" data-spot data-tilt data-nv="up" style="--d:${index * 80}ms">
     <div class="nv-product__image"><img src="${AS}${item.image}" alt="${name}" loading="lazy"><span>${mode === 'tech' ? 'MIRS / IT' : 'MIRS / PRINT'}</span></div>
-    <div class="nv-product__body"><small>${local(item.category)}</small><h3>${name}</h3><p>${local(item.detail)}</p><button type="button" class="nv-add" data-add="${name}">${tr('Ajouter au brief', 'Add to brief')} <i aria-hidden="true">${ICON_PLUS}</i></button></div>
+    <div class="nv-product__body"><small>${local(item.category)}</small><h3>${name}</h3><p>${local(item.detail)}</p><button type="button" class="nv-add" data-add="${name}" data-add-kind="${mode}">${tr('Ajouter au panier', 'Add to cart')} <i aria-hidden="true">${ICON_PLUS}</i></button></div>
   </article>`;
 }
 
@@ -393,6 +518,8 @@ function home() {
       ${marquee(universeNames())}
       ${marquee([tr('CONCEVOIR', 'DESIGN'), tr('DÉPLOYER', 'DEPLOY'), tr('ACCOMPAGNER', 'SUPPORT'), tr('TRANSMETTRE', 'TRANSFER'), 'CONAKRY', tr('DEPUIS 2006', 'SINCE 2006')], 'nv-marquee--alt')}
     </section>
+
+    ${amadeusBand()}
 
     <section class="nv-manifesto nv-wrap">
       <div class="nv-manifesto__side">${eyebrow(tr('UN PARTENAIRE, CINQ CAPACITÉS', 'ONE PARTNER, FIVE CAPABILITIES'), '01')}${link('/realisations', tr('Voir les réalisations', 'View our projects'))}</div>
@@ -472,9 +599,9 @@ function home() {
       </div>
       <div class="nv-shelf">
         <div class="nv-shelf__label"><span>01</span><b>${tr('Boutique informatique', 'IT store')}</b>${link('/informatique/boutique', tr('Tout voir', 'View all'))}</div>
-        <div class="nv-products nv-products--two">${products.tech.slice(0, 2).map((item, index) => homeProductCard(item, 'tech', index)).join('')}</div>
+        <div class="nv-skus">${storeProducts.filter((product) => isProductVisible(product.id)).slice(0, 3).map(storeCard).join('')}</div>
         <div class="nv-shelf__label"><span>02</span><b>${tr('Boutique imprimerie', 'Print store')}</b>${link('/imprimerie/boutique', tr('Tout voir', 'View all'))}</div>
-        <div class="nv-products">${products.print.slice(0, 3).map((item, index) => homeProductCard(item, 'print', index)).join('')}</div>
+        <div class="nv-products">${products.print.filter((_, index) => isProductVisible(`print:${index}`)).slice(0, 3).map((item, index) => homeProductCard(item, 'print', index)).join('')}</div>
       </div>
     </section>
 
@@ -687,73 +814,18 @@ function printMockups() {
   </section>`;
 }
 
-function training() {
-  const path = [
-    [tr('Positionner', 'Assess'), tr('Identifier les besoins et le niveau de départ.', 'Identify needs and the starting level.')],
-    [tr('Pratiquer', 'Practice'), tr('Faire, recommencer et relier les outils au contexte.', 'Do, repeat and connect tools to context.')],
-    [tr('Transférer', 'Transfer'), tr('Préparer le retour à l’équipe et aux situations réelles.', 'Prepare the return to the team and real situations.')],
-    [tr('Suivre', 'Follow up'), tr('Garder un point de contact lorsque les questions apparaissent.', 'Keep a point of contact when questions arise.')],
-  ];
-  return shell(`<main class="nv-academy">
-    <section class="nv-academy-hero" data-hero>
-      <canvas class="nv-hero__field" data-field aria-hidden="true"></canvas>
-      <div class="nv-hero__aurora" aria-hidden="true"><span></span><span></span><span></span></div>
-      <div class="nv-hero__grid" aria-hidden="true"></div>
-      <div class="nv-academy-hero__layout nv-wrap">
-        <div class="nv-academy-hero__copy">
-          <div class="nv-hero__meta" data-nv="fade"><span>MIRS ACADEMY</span><span>${tr('PARCOURS MÉTIER', 'BUSINESS PATHWAYS')}</span></div>
-          ${sectionTitle(tr('Apprendre,<br>puis savoir<br><em>faire.</em>', 'Learn.<br>Apply.<br><em>Perform.</em>'), 'nv-academy-hero__title', 'h1')}
-          <p data-nv="up" style="--d:220ms">${tr('Des formations structurées autour de vos outils, de vos équipes et de vos objectifs opérationnels.', 'Training structured around your tools, teams and operational objectives.')}</p>
-          <div class="nv-hero__actions" data-nv="up" style="--d:320ms">${button('/contact', tr('Construire un parcours', 'Build a pathway'), 'primary')}${videoButton('mirs-media/mirs-company-presentation.mp4', tr('Voir l’approche', 'See our approach'))}</div>
-          <div class="nv-proof" data-nv="fade" style="--d:420ms"><span>${tr('PRATIQUE', 'PRACTICE')}</span><span>${tr('OUTILS', 'TOOLS')}</span><span>${tr('RELAIS', 'FOLLOW-UP')}</span></div>
-        </div>
-        <div class="nv-cards3d" data-tilt aria-hidden="true">
-          <div class="nv-cards3d__card nv-cards3d__card--1"><span>01</span><b>${tr('OBSERVEZ', 'OBSERVE')}</b><i></i></div>
-          <div class="nv-cards3d__card nv-cards3d__card--2"><span>02</span><b>${tr('ESSAYEZ', 'TRY')}</b><i></i></div>
-          <div class="nv-cards3d__card nv-cards3d__card--3"><span>03</span><b>${tr('MAÎTRISEZ', 'MASTER')}</b><i></i></div>
-        </div>
-      </div>
-    </section>
-
-    ${marquee(courses.map((course) => local(course.name).toUpperCase()), 'nv-marquee--solo')}
-
-    <section class="nv-thesis nv-wrap">
-      <div class="nv-thesis__initial" aria-hidden="true" data-speed="-0.08">A</div>
-      <div class="nv-thesis__copy">${eyebrow(tr('UNE PÉDAGOGIE DE TERRAIN', 'PRACTICAL LEARNING'), '01')}${sectionTitle(tr('Le savoir utile est celui qui <em>s’applique.</em>', 'Useful learning is learning that <em>applies.</em>'))}<p class="nv-thesis__text" data-scrub>${tr('Chaque parcours commence avec un niveau réel, des outils réels et une situation à améliorer. L’objectif est de permettre aux équipes d’appliquer les acquis dès le lendemain.', 'Every pathway begins with a real level, real tools and a situation to improve. The aim is for teams to apply new skills the very next day.')}</p>
-        <div class="nv-minimetrics" data-nv="up"><span><b>01</b> ${tr('contexte', 'context')}</span><span><b>02</b> ${tr('pratique', 'practice')}</span><span><b>03</b> ${tr('autonomie', 'autonomy')}</span></div></div>
-    </section>
-
-    <section class="nv-section nv-wrap">
-      <div class="nv-head"><div>${eyebrow(tr('POINTS D’ENTRÉE', 'STARTING POINTS'), '02')}${sectionTitle(tr('Des parcours qui passent<br>à l’<em>action.</em>', 'Pathways that move<br>into <em>action.</em>'))}</div><p data-nv="up">${tr('Choisissez une porte d’entrée ; nous vous aiderons à concevoir la suite.', 'Choose a starting point; we will help you design what follows.')}</p></div>
-      <div class="nv-courses">${courses.map((course, index) => `<article class="nv-course" data-spot data-nv="up" style="--d:${index * 70}ms"><div class="nv-course__top"><span>0${index + 1}</span><small>${local(course.category)}</small></div><h3>${local(course.name)}</h3><p>${local(course.detail)}</p><button type="button" class="nv-add" data-add="${tr('Formation', 'Training')} : ${local(course.name)}">${tr('Ajouter au brief', 'Add to brief')} <i aria-hidden="true">${ICON_PLUS}</i></button></article>`).join('')}</div>
-    </section>
-
-    <section class="nv-section nv-wrap nv-path" data-progress>
-      <div class="nv-path__intro">${eyebrow(tr('COMMENT LE PARCOURS SE DÉPLIE', 'HOW THE PATHWAY UNFOLDS'), '03')}${sectionTitle(tr('Partir de l’usage.<br><em>Revenir au réel.</em>', 'Start with the use case.<br><em>Return to work.</em>'))}</div>
-      <ol class="nv-path__list"><span class="nv-path__line" aria-hidden="true"><i></i></span>${path.map((step, index) => `<li data-nv="up" style="--d:${index * 90}ms"><span>0${index + 1}</span><div><b>${step[0]}</b><p>${step[1]}</p></div></li>`).join('')}</ol>
-    </section>
-
-    <section class="nv-quote nv-wrap" data-progress="enter">
-      <figure class="nv-quote__media"><img src="${AS}editorial/formation-collaboration.jpg" alt="${tr('Échange pendant une formation MIRS', 'Discussion during a MIRS training session')}" loading="lazy" data-speed="-0.06"></figure>
-      <div class="nv-quote__copy" data-spot><span aria-hidden="true">“</span><p data-scrub>${tr('Une bonne formation se mesure à ce que les équipes peuvent appliquer après la session.', 'Good training is measured by what teams can apply after the session.')}</p>${button('/contact', tr('Parler de votre équipe', 'Talk about your team'), 'primary')}</div>
-    </section>
-
-    ${closingPortal(tr('Composons le parcours de votre <em>équipe.</em>', 'Let’s design your team’s <em>pathway.</em>'), tr('Un niveau de départ, des outils, un objectif : c’est suffisant pour commencer.', 'A starting level, tools and an objective: that is enough to begin.'), tr('Construire un parcours', 'Build a pathway'))}
-  </main>`, '/formation');
-}
-
 function productCard(item, mode, index = 0) {
   const name = local(item.name);
   return `<article class="nv-product nv-product--${mode}" data-product-card data-category="${item.categoryKey}" data-spot data-tilt data-nv="up" style="--d:${index * 70}ms">
     <div class="nv-product__image"><img src="${AS}${item.image}" alt="${name}" loading="lazy"><span>${mode === 'tech' ? 'MIRS / IT' : 'MIRS / PRINT'}</span></div>
-    <div class="nv-product__body"><small>${local(item.category)}</small><h3>${name}</h3><p>${local(item.detail)}</p><button type="button" class="nv-add" data-add="${name}">${tr('Ajouter au brief', 'Add to brief')} <i aria-hidden="true">${ICON_PLUS}</i></button></div>
+    <div class="nv-product__body"><small>${local(item.category)}</small><h3>${name}</h3><p>${local(item.detail)}</p><button type="button" class="nv-add" data-add="${name}" data-add-kind="print">${tr('Ajouter au panier', 'Add to cart')} <i aria-hidden="true">${ICON_PLUS}</i></button></div>
   </article>`;
 }
 
 function shop(kind) {
   const isTech = kind === 'tech';
   const name = isTech ? tr('Solutions informatique', 'IT solutions') : tr('Supports imprimés', 'Print materials');
-  const items = products[kind];
+  const items = products[kind].filter((_, index) => isProductVisible(`print:${index}`));
   const filters = [...new Map(items.map((item) => [item.categoryKey, local(item.category)])).entries()];
   const hero = isTech ? 'editorial/equipement-clavier.jpg' : 'mirs-media/nimba-polo-transparent.png';
   return shell(`<main class="nv-shop nv-shop--${kind}">
@@ -779,149 +851,811 @@ function shop(kind) {
   </main>`, isTech ? '/informatique/boutique' : '/imprimerie/boutique');
 }
 
-function adminStatus(status) {
-  const labels = {
-    published: tr('Publié', 'Published'),
-    draft: tr('Brouillon', 'Draft'),
-    review: tr('À relire', 'Review'),
-    new: tr('Nouvelle', 'New'),
-    analysis: tr('En analyse', 'In review'),
-    quote: tr('Devis envoyé', 'Quote sent'),
-    progress: tr('En cours', 'In progress'),
-    done: tr('Terminée', 'Completed'),
-  };
-  return `<span class="admin-badge admin-badge--${status}">${labels[status] || status}</span>`;
+/* ==================================================================
+   Administration — MIRS Nova control room.
+   Reads the same data as the public site: orders, registrations,
+   emergencies and requests sent from this browser, the course catalogue
+   and its sessions, and the store catalogue with its visibility.
+================================================================== */
+
+const REQUEST_TYPES = {
+  urgent: { fr: 'Urgence', en: 'Emergency', tone: 'danger' },
+  ticket: { fr: 'Intervention', en: 'Service request', tone: 'warn' },
+  contract: { fr: 'Contrat maintenance', en: 'Maintenance contract', tone: 'info' },
+  order: { fr: 'Commande', en: 'Order', tone: 'accent' },
+  enrolment: { fr: 'Inscription', en: 'Registration', tone: 'academy' },
+  contact: { fr: 'Contact', en: 'Contact', tone: 'info' },
+  request: { fr: 'Demande', en: 'Request', tone: 'info' },
+};
+
+const STATUS_LABELS = {
+  new: { fr: 'Nouvelle', en: 'New' },
+  analysis: { fr: 'En analyse', en: 'In review' },
+  quote: { fr: 'Devis envoyé', en: 'Quote sent' },
+  confirmed: { fr: 'Confirmée', en: 'Confirmed' },
+  progress: { fr: 'En cours', en: 'In progress' },
+  done: { fr: 'Terminée', en: 'Completed' },
+  cancelled: { fr: 'Annulée', en: 'Cancelled' },
+  published: { fr: 'Publié', en: 'Published' },
+  draft: { fr: 'Brouillon', en: 'Draft' },
+  review: { fr: 'À relire', en: 'Review' },
+};
+
+const isOpen = (item) => !['done', 'cancelled'].includes(item.status);
+const adminBadge = (status) => `<span class="nva-badge nva-badge--${status}">${local(STATUS_LABELS[status]) || status}</span>`;
+const typeBadge = (type) => {
+  const meta = REQUEST_TYPES[type] || REQUEST_TYPES.request;
+  return `<span class="nva-type nva-type--${meta.tone}">${local(meta)}</span>`;
+};
+
+const ADMIN_ICONS = {
+  home: '<rect x="3" y="3" width="7" height="8" rx="1.5"/><rect x="14" y="3" width="7" height="5" rx="1.5"/><rect x="14" y="12" width="7" height="9" rx="1.5"/><rect x="3" y="15" width="7" height="6" rx="1.5"/>',
+  urgent: '<path d="M12 3 2 20h20L12 3z"/><path d="M12 10v4.5M12 17.5h.01"/>',
+  orders: '<path d="M3 4h2.5l2.2 10.5a1.5 1.5 0 0 0 1.5 1.2h8.6a1.5 1.5 0 0 0 1.5-1.1L21 8H6.3"/><circle cx="9.5" cy="19.5" r="1.3"/><circle cx="17" cy="19.5" r="1.3"/>',
+  enrolments: '<path d="M2 9l10-5 10 5-10 5z"/><path d="M6 11v5c3 2.5 9 2.5 12 0v-5"/>',
+  requests: '<path d="M4 5h16v11H8l-4 4z"/><path d="M8 9h8M8 12h5"/>',
+  training: '<rect x="3" y="4" width="18" height="16" rx="2"/><path d="M3 9h18M8 2.5v3M16 2.5v3"/>',
+  stores: '<path d="M4 9h16l-1 11H5z"/><path d="M8 9V6a4 4 0 0 1 8 0v3"/>',
+  content: '<path d="M5 3h10l4 4v14H5z"/><path d="M15 3v4h4M8 12h8M8 16h6"/>',
+  media: '<rect x="3" y="5" width="18" height="14" rx="2"/><path d="M10 9.5v5l4.5-2.5z"/>',
+  settings: '<circle cx="12" cy="12" r="3"/><path d="M12 2.5v3M12 18.5v3M2.5 12h3M18.5 12h3M5.3 5.3l2.1 2.1M16.6 16.6l2.1 2.1M5.3 18.7l2.1-2.1M16.6 7.4l2.1-2.1"/>',
+};
+const adminIcon = (name) => `<svg viewBox="0 0 24 24" aria-hidden="true">${ADMIN_ICONS[name] || ADMIN_ICONS.home}</svg>`;
+
+function adminLogin() {
+  return shell(`<main class="nva-auth">
+    <canvas class="nv-hero__field" data-field aria-hidden="true"></canvas>
+    <div class="nv-hero__aurora" aria-hidden="true"><span></span><span></span><span></span></div>
+    <div class="nv-hero__grid" aria-hidden="true"></div>
+    <section class="nva-auth__card" data-spot>
+      <div class="nva-auth__brand">${brandMark()}<span><b>MIRS</b><small>SPATIAL SYSTEMS</small></span></div>
+      <p class="nv-eyebrow"><span aria-hidden="true"></span>${tr('MIRS / ADMINISTRATION', 'MIRS / ADMINISTRATION')}</p>
+      <h1>${tr('Accéder au <em>poste de pilotage.</em>', 'Access the <em>control room.</em>')}</h1>
+      <p>${tr('Commandes, inscriptions, urgences, catalogue et contenus du site MIRS.', 'Orders, registrations, emergencies, catalogue and MIRS site content.')}</p>
+      <form class="nva-auth__form" data-admin-login>
+        <label class="nv-field"><input name="username" required autocomplete="username" placeholder=" "><span>${tr('Identifiant', 'Username')}</span></label>
+        <label class="nv-field"><input name="password" type="password" required autocomplete="current-password" placeholder=" "><span>${tr('Mot de passe', 'Password')}</span></label>
+        <button type="submit" class="nv-btn nv-btn--primary nv-btn--lg nv-btn--block">${roll(tr('Ouvrir l’administration', 'Open administration'))}<i aria-hidden="true">${ICON_ARROW}</i></button>
+        <p class="nva-auth__status" data-admin-login-status aria-live="polite" role="status"></p>
+      </form>
+      <div class="nva-auth__foot"><span>${tr('Accès réservé à l’équipe MIRS.', 'Access reserved for the MIRS team.')}</span><a href="${pageHref('/')}" data-link>← ${tr('Retour au site', 'Back to site')}</a></div>
+    </section>
+  </main>`, '/admin');
 }
 
-function adminViewHeading(view) {
-  const headings = {
-    home: [tr('VUE D’ENSEMBLE', 'OVERVIEW'), tr('Le poste de pilotage<br><em>MIRS.</em>', 'The <em>MIRS</em><br>control room.'), tr('Les priorités du site et des services au même endroit.', 'Site and service priorities in one place.')],
-    content: [tr('SITE / CONTENUS', 'SITE / CONTENT'), tr('Modifier ce que<br>vos publics <em>voient.</em>', 'Edit what your<br>audiences <em>see.</em>'), tr('Pages, univers, textes FR / EN et statut de publication.', 'Pages, capabilities, FR / EN copy and publishing status.')],
-    services: [tr('SERVICES / DEMANDES', 'SERVICES / REQUESTS'), tr('Traiter chaque<br>demande avec <em>méthode.</em>', 'Handle every<br>request with <em>care.</em>'), tr('Une file de suivi pour les cinq univers et les commandes.', 'One tracking queue for all five capabilities and orders.')],
-    training: [tr('ACADEMY / FORMATIONS', 'ACADEMY / TRAINING'), tr('Des parcours<br>prêts à <em>transmettre.</em>', 'Pathways ready<br>to be <em>shared.</em>'), tr('Sessions, inscriptions, capacité et publication des modules.', 'Sessions, enrolments, capacity and module publishing.')],
-    stores: [tr('BOUTIQUES / CATALOGUES', 'STORES / CATALOGUES'), tr('Garder les offres<br><em>disponibles.</em>', 'Keep offers<br><em>available.</em>'), tr('Produits, visuels et disponibilité pour l’informatique et l’imprimerie.', 'Products, imagery and availability for IT and print.')],
-    media: [tr('SITE / MÉDIAS', 'SITE / MEDIA'), tr('Les bons médias<br>au bon <em>endroit.</em>', 'The right media<br>in the right <em>place.</em>'), tr('Vidéos immersives, logos et ressources publiques.', 'Immersive videos, logos and public resources.')],
-    settings: [tr('CONFIGURATION', 'SETTINGS'), tr('Un espace simple<br>à <em>maintenir.</em>', 'A workspace<br>easy to <em>maintain.</em>'), tr('Préférences de fonctionnement et qualité de publication.', 'Operating preferences and publishing quality.')],
-  };
-  const [label, title, detail] = headings[view] || headings.home;
-  return `<div class="admin-main__heading"><div><span>${label}</span><h1>${title}</h1></div><p>${detail}</p></div>`;
+function requestRow(item) {
+  const search = [item.id, item.customer, item.service, item.detail, item.phone, item.courseName, ...(item.lines || []).map((line) => line.name)].filter(Boolean).join(' ').toLowerCase();
+  const phone = String(item.phone || '').replace(/[^\d+]/g, '');
+  const statuses = item.type === 'enrolment' ? ['new', 'confirmed', 'done', 'cancelled'] : item.type === 'order' ? ['new', 'quote', 'confirmed', 'progress', 'done', 'cancelled'] : ['new', 'analysis', 'quote', 'progress', 'done', 'cancelled'];
+  return `<article class="nva-row ${item.type === 'urgent' && isOpen(item) ? 'is-urgent' : ''}" data-admin-row="requests" data-type="${item.type || 'request'}" data-search-text="${escapeHtml(search)}">
+    <div class="nva-row__id">${typeBadge(item.type)}<b>${escapeHtml(item.id)}</b><small>${escapeHtml(item.updated || '')}${item.demo ? ` · ${tr('démo', 'demo')}` : ''}</small></div>
+    <div class="nva-row__copy">
+      <b>${escapeHtml(item.customer || '—')}</b>
+      <span>${escapeHtml(item.service || '')}${item.session ? ` · ${formatDate(item.session)}` : ''}</span>
+      ${item.detail ? `<p>${escapeHtml(item.detail)}</p>` : ''}
+      ${item.lines?.length ? `<ul class="nva-row__lines">${item.lines.map((line) => `<li><b>×${line.qty}</b>${escapeHtml(line.name)}${line.option ? ` <small>${escapeHtml(line.option)}</small>` : ''}</li>`).join('')}</ul>` : ''}
+    </div>
+    <div class="nva-row__contact">${phone ? `<a href="tel:${phone}">${escapeHtml(item.phone)}</a><a href="https://wa.me/${phone.replace(/^\+/, '')}" target="_blank" rel="noreferrer">WhatsApp ↗</a>` : '<small>—</small>'}${item.email ? `<a href="mailto:${escapeHtml(item.email)}">${escapeHtml(item.email)}</a>` : ''}</div>
+    <div class="nva-row__state">${adminBadge(item.status)}${item.priority === 'high' ? `<small class="nva-priority">${tr('Prioritaire', 'High priority')}</small>` : ''}
+      <select data-admin-request-status="${escapeHtml(item.id)}" aria-label="${tr('Statut', 'Status')} ${escapeHtml(item.id)}">${statuses.map((status) => `<option value="${status}" ${item.status === status ? 'selected' : ''}>${local(STATUS_LABELS[status])}</option>`).join('')}</select>
+    </div>
+  </article>`;
 }
 
-function adminRequestsRows(data, compact = false) {
-  const requests = compact ? data.requests.slice(0, 4) : data.requests;
-  return requests.map((item) => `<article class="admin-request-row ${compact ? 'is-compact' : ''}" data-admin-row="requests" data-search-text="${[item.id, item.customer, item.service, item.detail].join(' ').toLowerCase()}">
-    <div class="admin-request-id"><b>${item.id}</b><small>${item.updated}</small></div>
-    <div class="admin-request-copy"><b>${item.customer}</b><span>${item.service}</span><p>${item.detail}</p></div>
-    <div class="admin-request-state">${adminStatus(item.status)}${item.priority === 'high' ? `<small class="admin-priority-note">${tr('Prioritaire', 'High priority')}</small>` : ''}</div>
-    ${compact ? `<button type="button" class="admin-row-link" data-admin-view="services">${tr('Ouvrir', 'Open')}</button>` : `<label class="admin-inline-field"><span>${tr('Statut', 'Status')}</span><select data-admin-request-status="${item.id}" aria-label="${tr(`Statut de ${item.id}`, `Status of ${item.id}`)}"><option value="new" ${item.status === 'new' ? 'selected' : ''}>${tr('Nouvelle', 'New')}</option><option value="analysis" ${item.status === 'analysis' ? 'selected' : ''}>${tr('En analyse', 'In review')}</option><option value="quote" ${item.status === 'quote' ? 'selected' : ''}>${tr('Devis envoyé', 'Quote sent')}</option><option value="progress" ${item.status === 'progress' ? 'selected' : ''}>${tr('En cours', 'In progress')}</option><option value="done" ${item.status === 'done' ? 'selected' : ''}>${tr('Terminée', 'Completed')}</option></select></label>`}
-  </article>`).join('');
+function requestList(items, emptyText) {
+  return items.length ? `<div class="nva-list">${items.map(requestRow).join('')}</div>` : `<div class="nva-empty"><b>${tr('Rien pour l’instant.', 'Nothing yet.')}</b><p>${emptyText}</p></div>`;
 }
 
-function adminContentRows(data) {
-  return data.content.map((item) => `<article class="admin-content-row" data-admin-row="content" data-search-text="${[item.area.fr, item.area.en, item.title.fr, item.title.en].join(' ').toLowerCase()}">
-    <div class="admin-content-type"><span>${item.type[state.locale] || item.type.fr}</span><b>${item.id.toUpperCase()}</b></div>
-    <div class="admin-content-copy"><b>${item.title[state.locale] || item.title.fr}</b><small>${item.area[state.locale] || item.area.fr}</small></div>
-    ${adminStatus(item.status)}
-    <small class="admin-date">${item.updated}</small>
-    <button type="button" class="admin-row-link" data-admin-edit="content" data-admin-id="${item.id}">${tr('Modifier', 'Edit')}</button>
-  </article>`).join('');
+function adminToolbar(scope, placeholder, extra = '') {
+  return `<div class="nva-toolbar"><label class="nv-search"><svg viewBox="0 0 24 24" aria-hidden="true"><circle cx="11" cy="11" r="6.5"/><path d="M16 16l4.5 4.5"/></svg><input type="search" data-admin-search="${scope}" placeholder="${placeholder}"></label>${extra}</div>`;
 }
 
-function adminTrainingRows(data) {
-  return data.training.map((course, index) => `<article class="admin-training-row" data-admin-row="training" data-search-text="${[local(course.name), local(course.category)].join(' ').toLowerCase()}">
-    <span class="admin-index">${String(index + 1).padStart(2, '0')}</span>
-    <div class="admin-training-copy"><b>${local(course.name)}</b><small>${local(course.category)}</small></div>
-    <div class="admin-training-stat"><b>${course.learners}</b><small>${tr('inscrits', 'learners')}</small></div>
-    <div class="admin-training-stat"><b>${course.sessions}</b><small>${tr('sessions', 'sessions')}</small></div>
-    ${adminStatus(course.status)}
-    <button type="button" class="admin-row-link" data-admin-toggle-training="${course.id}">${course.status === 'published' ? tr('Dépublier', 'Unpublish') : tr('Publier', 'Publish')}</button>
-  </article>`).join('');
-}
-
-function adminProductRows(mode, data) {
-  return products[mode].map((item, index) => {
-    const active = data.inventory[mode]?.[index] !== false;
-    return `<article class="admin-product-row" data-admin-row="stores" data-search-text="${[local(item.name), local(item.category), local(item.detail)].join(' ').toLowerCase()}">
-      <div class="admin-product-thumb"><img src="${AS}${item.image}" alt="" loading="lazy"></div>
-      <div class="admin-product-copy"><b>${local(item.name)}</b><small>${local(item.category)}</small><p>${local(item.detail)}</p></div>
-      <span class="admin-live-dot ${active ? 'is-live' : ''}">${active ? tr('Visible', 'Live') : tr('Masqué', 'Hidden')}</span>
-      <button type="button" class="admin-row-link" data-admin-product="${mode}:${index}">${active ? tr('Masquer', 'Hide') : tr('Publier', 'Publish')}</button>
-    </article>`;
-  }).join('');
-}
-
-function adminMediaRows(data) {
-  return data.media.map((item) => `<article class="admin-media-row" data-admin-row="media" data-search-text="${[item.name.fr, item.name.en, item.type.fr, item.type.en].join(' ').toLowerCase()}">
-    <div class="admin-media-preview"><video muted playsinline preload="metadata"><source src="${AS}${item.file}" type="video/mp4"></video><span>${tr('Aperçu', 'Preview')}</span></div>
-    <div class="admin-media-copy"><span>${item.type[state.locale] || item.type.fr}</span><b>${item.name[state.locale] || item.name.fr}</b><small>${item.file}</small></div>
-    ${adminStatus(item.status)}<small class="admin-date">${item.updated}</small>
-    <button type="button" class="admin-row-link" data-admin-toggle-media="${item.id}">${item.status === 'published' ? tr('Archiver', 'Archive') : tr('Publier', 'Publish')}</button>
-  </article>`).join('');
+function adminKpi(value, label, detail, view, tone = '') {
+  return `<button type="button" class="nva-kpi ${tone}" data-admin-view="${view}" data-spot><span class="nva-kpi__value" data-count="${value}" data-pad="2">${String(value).padStart(2, '0')}</span><b>${label}</b><small>${detail}</small><i aria-hidden="true">${ICON_ARROW}</i></button>`;
 }
 
 function adminViewMarkup(view, data) {
-  const openRequests = data.requests.filter((item) => !['done'].includes(item.status)).length;
-  const publishedContent = data.content.filter((item) => item.status === 'published').length;
-  const publishedTraining = data.training.filter((item) => item.status === 'published').length;
-  const liveProducts = [...(data.inventory.tech || []), ...(data.inventory.print || [])].filter(Boolean).length;
-  if (view === 'content') return `<section class="admin-view admin-view--content">
-    <div class="admin-toolbar"><label class="admin-search"><span>⌕</span><input type="search" data-admin-search="content" placeholder="${tr('Rechercher une page ou un univers', 'Search a page or capability')}"></label><button type="button" class="admin-action-button admin-action-button--accent" data-admin-action="new-content">${tr('Nouveau contenu', 'New content')}</button></div>
-    <div class="admin-table-head"><span>${tr('Page / univers', 'Page / capability')}</span><span>${tr('Statut', 'Status')}</span><span>${tr('Mise à jour', 'Updated')}</span><span></span></div>
-    <div class="admin-content-list">${adminContentRows(data)}</div>
-  </section>`;
-  if (view === 'services') return `<section class="admin-view admin-view--services">
-    <div class="admin-toolbar"><label class="admin-search"><span>⌕</span><input type="search" data-admin-search="requests" placeholder="${tr('Rechercher par dossier, client ou univers', 'Search by case, client or capability')}"></label><button type="button" class="admin-action-button" data-admin-view="content">${tr('Voir les contenus', 'View content')}</button></div>
-    <div class="admin-service-note"><span>${openRequests}</span><div><b>${tr('demandes ouvertes', 'open requests')}</b><small>${tr('Les statuts sont sauvegardés dans ce navigateur.', 'Statuses are saved in this browser.')}</small></div></div>
-    <div class="admin-request-list">${adminRequestsRows(data)}</div>
-  </section>`;
-  if (view === 'training') return `<section class="admin-view admin-view--training">
-    <div class="admin-toolbar"><label class="admin-search"><span>⌕</span><input type="search" data-admin-search="training" placeholder="${tr('Rechercher une formation', 'Search a course')}"></label><button type="button" class="admin-action-button admin-action-button--accent" data-admin-action="new-training">${tr('Ajouter un module', 'Add a module')}</button></div>
-    <div class="admin-training-summary"><div><b>${publishedTraining}</b><span>${tr('modules publiés', 'published modules')}</span></div><div><b>${data.training.reduce((total, item) => total + item.learners, 0)}</b><span>${tr('apprenants suivis', 'learners tracked')}</span></div><div><b>${data.training.reduce((total, item) => total + item.sessions, 0)}</b><span>${tr('sessions planifiées', 'planned sessions')}</span></div></div>
-    <div class="admin-training-list">${adminTrainingRows(data)}</div>
-  </section>`;
-  if (view === 'stores') return `<section class="admin-view admin-view--stores">
-    <div class="admin-toolbar"><label class="admin-search"><span>⌕</span><input type="search" data-admin-search="stores" placeholder="${tr('Rechercher un produit', 'Search a product')}"></label><span class="admin-toolbar-stat">${liveProducts} / ${products.tech.length + products.print.length} ${tr('offres visibles', 'offers live')}</span></div>
-    <div class="admin-store-section"><div class="admin-store-heading"><div><span>01 / IT</span><h2>${tr('Boutique informatique', 'IT store')}</h2></div><a href="${pageHref('/informatique/boutique')}" data-link class="admin-row-link">${tr('Voir la boutique', 'View store')}</a></div><div class="admin-product-list">${adminProductRows('tech', data)}</div></div>
-    <div class="admin-store-section"><div class="admin-store-heading"><div><span>02 / PRINT</span><h2>${tr('Boutique imprimerie', 'Print store')}</h2></div><a href="${pageHref('/imprimerie/boutique')}" data-link class="admin-row-link">${tr('Voir la boutique', 'View store')}</a></div><div class="admin-product-list">${adminProductRows('print', data)}</div></div>
-  </section>`;
-  if (view === 'media') return `<section class="admin-view admin-view--media">
-    <div class="admin-toolbar"><label class="admin-search"><span>⌕</span><input type="search" data-admin-search="media" placeholder="${tr('Rechercher un média', 'Search media')}"></label><span class="admin-toolbar-stat">03 ${tr('vidéos natives', 'native videos')}</span></div>
-    <div class="admin-media-list--full">${adminMediaRows(data)}</div>
-  </section>`;
-  if (view === 'settings') return `<section class="admin-view admin-view--settings">
-    <div class="admin-settings-card"><div><span>${tr('QUALITÉ DU SITE', 'SITE QUALITY')}</span><h2>${tr('Des règles simples<br>pour garder MIRS <em>clair.</em>', 'Simple rules<br>to keep MIRS <em>clear.</em>')}</h2><p>${tr('Ces préférences sont enregistrées localement pour préparer la future connexion sécurisée.', 'These preferences are stored locally ahead of the future secure connection.')}</p></div><div class="admin-settings-list"><label><span><b>${tr('Recevoir les demandes publiques', 'Accept public requests')}</b><small>${tr('Laisser le formulaire de contact actif.', 'Keep the contact form active.')}</small></span><input type="checkbox" data-admin-setting="publicRequests" ${data.settings.publicRequests ? 'checked' : ''}></label><label><span><b>${tr('Publier les deux langues', 'Publish both languages')}</b><small>${tr('Maintenir un contenu FR / EN cohérent.', 'Keep FR / EN content aligned.')}</small></span><input type="checkbox" data-admin-setting="bilingual" ${data.settings.bilingual ? 'checked' : ''}></label><label><span><b>${tr('Mode maintenance', 'Maintenance mode')}</b><small>${tr('Préparer une interruption visible du site.', 'Prepare a visible site interruption.')}</small></span><input type="checkbox" data-admin-setting="maintenance" ${data.settings.maintenance ? 'checked' : ''}></label></div></div>
-    <div class="admin-settings-foot"><span>${tr('Données de démonstration locales · prêtes à être reliées à une base sécurisée.', 'Local demo data · ready to connect to a secure database.')}</span><button type="button" class="admin-action-button" data-admin-action="reset">${tr('Réinitialiser les données', 'Reset data')}</button></div>
-  </section>`;
-  return `<section class="admin-view admin-view--home">
-    <div class="admin-kpi-grid"><article><span>${String(openRequests).padStart(2, '0')}</span><b>${tr('Demandes à traiter', 'Requests to process')}</b><small>${tr('Tous les univers confondus', 'Across all capabilities')}</small><button type="button" data-admin-view="services">${tr('Ouvrir la file', 'Open queue')}</button></article><article><span>${String(publishedContent).padStart(2, '0')}</span><b>${tr('Contenus publiés', 'Published content')}</b><small>${tr('Pages et univers actifs', 'Active pages and capabilities')}</small><button type="button" data-admin-view="content">${tr('Gérer le site', 'Manage site')}</button></article><article><span>${String(publishedTraining).padStart(2, '0')}</span><b>${tr('Formations actives', 'Active courses')}</b><small>${tr('Modules disponibles', 'Available modules')}</small><button type="button" data-admin-view="training">${tr('Voir Academy', 'View Academy')}</button></article><article><span>${String(liveProducts).padStart(2, '0')}</span><b>${tr('Offres visibles', 'Live offers')}</b><small>${tr('Informatique + imprimerie', 'IT + print')}</small><button type="button" data-admin-view="stores">${tr('Gérer les boutiques', 'Manage stores')}</button></article></div>
-    <div class="admin-home-grid"><section class="admin-card"><div class="admin-card-head"><div><span>${tr('À TRAITER', 'TO PROCESS')}</span><h2>${tr('Les dernières demandes', 'Latest requests')}</h2></div><button type="button" class="admin-row-link" data-admin-view="services">${tr('Tout voir', 'View all')}</button></div><div class="admin-request-list admin-request-list--compact">${adminRequestsRows(data, true)}</div></section><section class="admin-card"><div class="admin-card-head"><div><span>${tr('SANTÉ DU SITE', 'SITE HEALTH')}</span><h2>${tr('Une lecture rapide', 'A quick read')}</h2></div><button type="button" class="admin-row-link" data-admin-view="settings">${tr('Paramètres', 'Settings')}</button></div><div class="admin-health-list"><div><span class="admin-health-dot is-good"></span><b>${tr('Pages publiques', 'Public pages')}</b><small>${publishedContent} / ${data.content.length} ${tr('publiées', 'published')}</small></div><div><span class="admin-health-dot is-good"></span><b>${tr('Médias immersifs', 'Immersive media')}</b><small>${data.media.length} ${tr('vidéos natives', 'native videos')}</small></div><div><span class="admin-health-dot ${data.settings.bilingual ? 'is-good' : 'is-warning'}"></span><b>${tr('Version anglaise', 'English version')}</b><small>${data.settings.bilingual ? tr('Active', 'Active') : tr('À vérifier', 'Needs review')}</small></div><div><span class="admin-health-dot ${data.settings.maintenance ? 'is-warning' : 'is-good'}"></span><b>${tr('Disponibilité du site', 'Site availability')}</b><small>${data.settings.maintenance ? tr('Mode maintenance', 'Maintenance mode') : tr('Opérationnel', 'Operational')}</small></div></div></section></div>
-    <section class="admin-card admin-card--universes"><div class="admin-card-head"><div><span>${tr('CINQ UNIVERS', 'FIVE CAPABILITIES')}</span><h2>${tr('Chaque pôle a son espace de gestion.', 'Each capability has its own workspace.')}</h2></div><button type="button" class="admin-row-link" data-admin-view="content">${tr('Modifier les pages', 'Edit pages')}</button></div><div class="admin-universe-grid">${universes.map((unit) => `<button type="button" data-admin-view="content"><span>${unit.index}</span><b>${local(unit.name)}</b><small>${unit.signal}</small></button>`).join('')}</div></section>
+  const requests = data.requests;
+  const byType = (type) => requests.filter((item) => item.type === type);
+  const openOf = (types) => requests.filter((item) => types.includes(item.type) && isOpen(item));
+  const urgentOpen = openOf(['urgent']);
+  const maintenanceOpen = openOf(['urgent', 'ticket', 'contract']);
+  const ordersOpen = openOf(['order']);
+  const enrolOpen = openOf(['enrolment']);
+  const allOpen = requests.filter(isOpen);
+  const publishedCourses = academyCourses.filter((course) => data.courses[course.slug]?.status !== 'draft');
+  const upcoming = publishedCourses.flatMap((course) => courseSessions(course, data).map((session) => ({ course, session }))).sort((a, b) => a.session.date.localeCompare(b.session.date));
+  const enrolCount = (slug, date) => byType('enrolment').filter((item) => item.course === slug && (!date || item.session === date) && item.status !== 'cancelled').reduce((total, item) => total + (Number(item.seats) || 1), 0);
+
+  if (view === 'urgent') {
+    const items = requests.filter((item) => ['urgent', 'ticket', 'contract'].includes(item.type));
+    return `<section class="nva-view">
+      ${urgentOpen.length ? `<div class="nva-alert"><span class="nva-alert__pulse" aria-hidden="true"></span><div><b>${urgentOpen.length} ${tr('urgence(s) en attente', 'emergency call(s) waiting')}</b><small>${tr('Rappelez le client puis passez le statut à « En cours ».', 'Call the client back, then set the status to “In progress”.')}</small></div></div>` : ''}
+      ${adminToolbar('requests', tr('Rechercher un client, une adresse, une panne…', 'Search a client, address, fault…'), `<div class="nva-chips">${['all', 'urgent', 'ticket', 'contract'].map((type, index) => `<button type="button" data-admin-type-filter="${type}" class="${index === 0 ? 'is-active' : ''}">${type === 'all' ? tr('Tout', 'All') : local(REQUEST_TYPES[type])}</button>`).join('')}</div>`)}
+      ${requestList(items, tr('Les alertes envoyées depuis la page Maintenance apparaissent ici.', 'Alerts sent from the Maintenance page appear here.'))}
+    </section>`;
+  }
+  if (view === 'orders') {
+    const orders = byType('order');
+    const units = orders.reduce((total, item) => total + (item.lines || []).reduce((sum, line) => sum + line.qty, 0), 0);
+    return `<section class="nva-view">
+      <div class="nva-mini-stats"><div><b>${orders.length}</b><span>${tr('commandes', 'orders')}</span></div><div><b>${ordersOpen.length}</b><span>${tr('à chiffrer / suivre', 'to quote / follow')}</span></div><div><b>${units}</b><span>${tr('articles demandés', 'items requested')}</span></div></div>
+      ${adminToolbar('requests', tr('Rechercher une référence, un client, un produit…', 'Search a reference, client, product…'), `<button type="button" class="nva-action" data-admin-export="order">${tr('Exporter CSV', 'Export CSV')}</button>`)}
+      ${requestList(orders, tr('Les commandes passées depuis la boutique apparaissent ici avec leurs lignes et quantités.', 'Orders placed in the store appear here with their lines and quantities.'))}
+    </section>`;
+  }
+  if (view === 'enrolments') {
+    return `<section class="nva-view">
+      <div class="nva-sessions-grid">${upcoming.slice(0, 6).map(({ course, session }) => `<article class="nva-session" data-spot><small>${formatDate(session.date, 'short')} · ${session.place || 'Conakry'}</small><b>${local(course.name)}</b><span class="nva-session__seats"><b>${enrolCount(course.slug, session.date)}</b> ${tr('participant(s) inscrit(s)', 'participant(s) registered')}</span></article>`).join('') || `<div class="nva-empty"><p>${tr('Aucune session à venir.', 'No upcoming session.')}</p></div>`}</div>
+      ${adminToolbar('requests', tr('Rechercher un participant, un parcours…', 'Search a participant, pathway…'), `<button type="button" class="nva-action" data-admin-export="enrolment">${tr('Exporter CSV', 'Export CSV')}</button>`)}
+      ${requestList(byType('enrolment'), tr('Les demandes d’inscription envoyées depuis MIRS Academy apparaissent ici.', 'Registration requests sent from MIRS Academy appear here.'))}
+    </section>`;
+  }
+  if (view === 'requests') {
+    const types = [...new Set(requests.map((item) => item.type || 'request'))];
+    return `<section class="nva-view">
+      ${adminToolbar('requests', tr('Rechercher dans toutes les demandes…', 'Search all requests…'), `<div class="nva-chips"><button type="button" data-admin-type-filter="all" class="is-active">${tr('Tout', 'All')}</button>${types.map((type) => `<button type="button" data-admin-type-filter="${type}">${local(REQUEST_TYPES[type] || REQUEST_TYPES.request)}</button>`).join('')}</div><button type="button" class="nva-action" data-admin-export="all">${tr('Exporter CSV', 'Export CSV')}</button>`)}
+      ${requestList(requests, tr('Toutes les demandes du site apparaissent ici.', 'All site requests appear here.'))}
+    </section>`;
+  }
+  if (view === 'training') {
+    return `<section class="nva-view">
+      <form class="nva-card nva-session-form" data-admin-session-form>
+        <div><span class="nva-card__label">${tr('PLANIFIER', 'SCHEDULE')}</span><h2>${tr('Ajouter une session', 'Add a session')}</h2></div>
+        <label class="nv-field nv-field--select"><select name="slug">${academyCourses.map((course) => `<option value="${course.slug}">${local(course.name)}</option>`).join('')}</select><span>${tr('Parcours', 'Pathway')}</span></label>
+        <label class="nv-field"><input type="date" name="date" required min="${isoToday()}" placeholder=" "><span>Date</span></label>
+        <label class="nv-field"><input name="place" value="Conakry" placeholder=" "><span>${tr('Lieu', 'Venue')}</span></label>
+        <button type="submit" class="nv-btn nv-btn--primary">${roll(tr('Ajouter', 'Add'))}<i aria-hidden="true">${ICON_PLUS}</i></button>
+      </form>
+      <div class="nva-courses">${academyCourses.map((course) => {
+        const published = data.courses[course.slug]?.status !== 'draft';
+        const sessions = courseSessions(course, data);
+        return `<article class="nva-course" data-spot>
+          <div class="nva-course__head"><div><small>${local(course.category)}${course.amadeus ? ' · AMADEUS' : ''}</small><b>${local(course.name)}</b><span>${local(course.duration)} · ${course.modules.length} modules</span></div>${adminBadge(published ? 'published' : 'draft')}</div>
+          <ul class="nva-course__sessions">${sessions.map((session) => {
+            const extra = data.extraSessions.find((item) => item.slug === course.slug && item.date === session.date && item.id);
+            return `<li><span>${formatDate(session.date)}</span><b>${enrolCount(course.slug, session.date)} ${tr('inscrit(s)', 'registered')}</b>${extra ? `<button type="button" data-admin-remove-session="${extra.id}" aria-label="${tr('Retirer la session', 'Remove session')}">×</button>` : `<small>${tr('catalogue', 'catalogue')}</small>`}</li>`;
+          }).join('') || `<li><span>${tr('Aucune session à venir', 'No upcoming session')}</span></li>`}</ul>
+          <div class="nva-course__foot"><a href="${pageHref(`/formation/${course.slug}`)}" data-link class="nva-link">${tr('Voir la page', 'View page')} ↗</a><button type="button" class="nva-action" data-admin-toggle-course="${course.slug}">${published ? tr('Dépublier', 'Unpublish') : tr('Publier', 'Publish')}</button></div>
+        </article>`;
+      }).join('')}</div>
+    </section>`;
+  }
+  if (view === 'stores') {
+    const liveTech = storeProducts.filter((product) => data.inventory[product.id] !== false).length;
+    return `<section class="nva-view">
+      ${adminToolbar('stores', tr('Rechercher un produit…', 'Search a product…'), `<span class="nva-toolbar__stat">${liveTech} / ${storeProducts.length} ${tr('produits en ligne', 'products live')}</span>`)}
+      <div class="nva-card"><div class="nva-card__head"><div><span class="nva-card__label">01 / IT STORE</span><h2>${tr('Boutique informatique', 'IT store')}</h2></div><a href="${pageHref('/informatique/boutique')}" data-link class="nva-link">${tr('Voir la boutique', 'View store')} ↗</a></div>
+        <div class="nva-products">${storeProducts.map((product) => {
+          const live = data.inventory[product.id] !== false;
+          return `<article class="nva-product" data-admin-row="stores" data-search-text="${escapeHtml(`${local(product.name)} ${product.category}`.toLowerCase())}">${deviceArt(product.icon, 'nv-device--xs')}<div><b>${local(product.name)}</b><small>${local(storeCategories.find((category) => category.key === product.category)?.label)} · ${tr('sur devis', 'on quotation')}</small></div><button type="button" class="nva-switch ${live ? 'is-on' : ''}" data-admin-toggle-product="${product.id}" role="switch" aria-checked="${live}" aria-label="${tr('Visibilité', 'Visibility')} ${local(product.name)}"><i></i></button></article>`;
+        }).join('')}</div></div>
+      <div class="nva-card"><div class="nva-card__head"><div><span class="nva-card__label">02 / PRINT</span><h2>${tr('Boutique imprimerie', 'Print store')}</h2></div><a href="${pageHref('/imprimerie/boutique')}" data-link class="nva-link">${tr('Voir la boutique', 'View store')} ↗</a></div>
+        <div class="nva-products">${products.print.map((product, index) => {
+          const key = `print:${index}`;
+          const live = data.inventory[key] !== false;
+          return `<article class="nva-product" data-admin-row="stores" data-search-text="${escapeHtml(local(product.name).toLowerCase())}"><img src="${AS}${product.image}" alt="" loading="lazy"><div><b>${local(product.name)}</b><small>${local(product.category)}</small></div><button type="button" class="nva-switch ${live ? 'is-on' : ''}" data-admin-toggle-product="${key}" role="switch" aria-checked="${live}" aria-label="${tr('Visibilité', 'Visibility')} ${local(product.name)}"><i></i></button></article>`;
+        }).join('')}</div></div>
+    </section>`;
+  }
+  if (view === 'content') {
+    return `<section class="nva-view">
+      ${adminToolbar('content', tr('Rechercher une page…', 'Search a page…'), `<button type="button" class="nva-action nva-action--accent" data-admin-action="new-content">${tr('Nouveau contenu', 'New content')}</button>`)}
+      <div class="nva-list">${data.content.map((item) => `<article class="nva-row nva-row--content" data-admin-row="content" data-search-text="${escapeHtml([item.area.fr, item.area.en, item.title.fr, item.title.en].join(' ').toLowerCase())}">
+        <div class="nva-row__id"><span class="nva-type nva-type--info">${local(item.type)}</span><b>${escapeHtml(item.id.toUpperCase())}</b><small>${item.updated}</small></div>
+        <div class="nva-row__copy"><b>${escapeHtml(local(item.title))}</b><span>${escapeHtml(local(item.area))}</span></div>
+        <div class="nva-row__state">${adminBadge(item.status)}<button type="button" class="nva-action" data-admin-edit="content" data-admin-id="${escapeHtml(item.id)}">${tr('Modifier', 'Edit')}</button></div>
+      </article>`).join('')}</div>
+    </section>`;
+  }
+  if (view === 'media') {
+    return `<section class="nva-view"><div class="nva-media">${data.media.map((item) => `<article class="nva-media__item" data-spot>
+      <button type="button" class="nva-media__preview" data-video="${item.file}" data-video-title="${escapeHtml(local(item.name))}"><img src="${AS}${item.poster || 'mirs-media/posters/company.jpg'}" alt="" loading="lazy"><span class="nv-play-orb nv-play-orb--sm">${ICON_PLAY}</span></button>
+      <div><small>${local(item.type)}</small><b>${local(item.name)}</b><span>${item.file}</span></div>
+      <div class="nva-row__state">${adminBadge(item.status)}<button type="button" class="nva-action" data-admin-toggle-media="${item.id}">${item.status === 'published' ? tr('Archiver', 'Archive') : tr('Publier', 'Publish')}</button></div>
+    </article>`).join('')}</div></section>`;
+  }
+  if (view === 'settings') {
+    return `<section class="nva-view">
+      <div class="nva-card"><div class="nva-card__head"><div><span class="nva-card__label">${tr('PRÉFÉRENCES', 'PREFERENCES')}</span><h2>${tr('Fonctionnement du site', 'Site operations')}</h2></div></div>
+        <div class="nva-settings">${[
+          ['publicRequests', tr('Recevoir les demandes publiques', 'Accept public requests'), tr('Formulaires, commandes et inscriptions actifs.', 'Forms, orders and registrations active.')],
+          ['bilingual', tr('Publier les deux langues', 'Publish both languages'), tr('Maintenir un contenu FR / EN cohérent.', 'Keep FR / EN content aligned.')],
+          ['maintenance', tr('Mode maintenance', 'Maintenance mode'), tr('Préparer une interruption visible du site.', 'Prepare a visible site interruption.')],
+        ].map(([key, label, detail]) => `<label class="nva-setting"><span><b>${label}</b><small>${detail}</small></span><input type="checkbox" data-admin-setting="${key}" ${data.settings[key] ? 'checked' : ''}><i class="nva-switch ${data.settings[key] ? 'is-on' : ''}" aria-hidden="true"><i></i></i></label>`).join('')}</div></div>
+      <div class="nva-card nva-card--danger"><div><b>${tr('Données locales', 'Local data')}</b><p>${tr('Les demandes sont enregistrées dans ce navigateur et transmises à MIRS sur WhatsApp. Exportez-les régulièrement en CSV.', 'Requests are stored in this browser and sent to MIRS on WhatsApp. Export them regularly as CSV.')}</p></div><div class="nva-card__actions"><button type="button" class="nva-action" data-admin-export="all">${tr('Exporter tout', 'Export all')}</button><button type="button" class="nva-action" data-admin-action="reset">${tr('Réinitialiser', 'Reset')}</button></div></div>
+    </section>`;
+  }
+
+  // Overview
+  const latestOrders = byType('order').slice(0, 4);
+  return `<section class="nva-view">
+    <div class="nva-kpis">
+      ${adminKpi(urgentOpen.length, tr('Urgences ouvertes', 'Open emergencies'), tr('Maintenance prioritaire', 'Priority maintenance'), 'urgent', urgentOpen.length ? 'is-danger' : '')}
+      ${adminKpi(ordersOpen.length, tr('Commandes à chiffrer', 'Orders to quote'), tr('Boutique informatique', 'IT store'), 'orders')}
+      ${adminKpi(enrolOpen.length, tr('Inscriptions à confirmer', 'Registrations to confirm'), 'MIRS Academy', 'enrolments')}
+      ${adminKpi(allOpen.length, tr('Demandes ouvertes', 'Open requests'), tr('Tous canaux confondus', 'All channels'), 'requests')}
+    </div>
+    <div class="nva-grid">
+      <section class="nva-card nva-card--wide"><div class="nva-card__head"><div><span class="nva-card__label">${tr('MAINTENANCE', 'MAINTENANCE')}</span><h2>${tr('Alertes & interventions', 'Alerts & call-outs')}</h2></div><button type="button" class="nva-link" data-admin-view="urgent">${tr('Tout voir', 'View all')} ↗</button></div>${requestList(maintenanceOpen.slice(0, 3), tr('Aucune intervention en attente.', 'No call-out waiting.'))}</section>
+      <section class="nva-card"><div class="nva-card__head"><div><span class="nva-card__label">ACADEMY</span><h2>${tr('Prochaines sessions', 'Upcoming sessions')}</h2></div><button type="button" class="nva-link" data-admin-view="training">${tr('Planifier', 'Schedule')} ↗</button></div>
+        <ul class="nva-agenda">${upcoming.slice(0, 5).map(({ course, session }) => `<li><span class="nva-agenda__date"><b>${new Date(`${session.date}T12:00:00`).getDate()}</b><small>${formatDate(session.date, 'short').replace(/^\d+\s*/, '')}</small></span><span><b>${local(course.name)}</b><small>${enrolCount(course.slug, session.date)} ${tr('inscrit(s)', 'registered')}</small></span></li>`).join('') || `<li>${tr('Aucune session à venir.', 'No upcoming session.')}</li>`}</ul></section>
+      <section class="nva-card"><div class="nva-card__head"><div><span class="nva-card__label">STORE</span><h2>${tr('Dernières commandes', 'Latest orders')}</h2></div><button type="button" class="nva-link" data-admin-view="orders">${tr('Tout voir', 'View all')} ↗</button></div>
+        <ul class="nva-feed">${latestOrders.map((item) => `<li><b>${escapeHtml(item.id)}</b><span>${escapeHtml(item.customer)}</span><small>${(item.lines || []).reduce((total, line) => total + line.qty, 0)} ${tr('article(s)', 'item(s)')} · ${local(STATUS_LABELS[item.status])}</small></li>`).join('') || `<li class="nva-feed__empty">${tr('Aucune commande pour l’instant.', 'No orders yet.')}</li>`}</ul></section>
+      <section class="nva-card"><div class="nva-card__head"><div><span class="nva-card__label">${tr('RACCOURCIS', 'SHORTCUTS')}</span><h2>${tr('Le site en un clic', 'The site in one click')}</h2></div></div>
+        <div class="nva-shortcuts">${[['/amadeus', 'AMADEUS'], ['/formation', 'Academy'], ['/informatique/boutique', tr('Boutique', 'Store')], ['/maintenance', 'Maintenance']].map(([path, label]) => `<a href="${pageHref(path)}" data-link>${label}<i aria-hidden="true">${ICON_ARROW}</i></a>`).join('')}</div></section>
+    </div>
   </section>`;
 }
 
 function dashboard() {
   if (!adminAuthenticated()) return adminLogin();
-  const labels = {
-    home: tr('Vue d’ensemble', 'Overview'),
-    content: tr('Contenus du site', 'Site content'),
-    services: tr('Demandes de services', 'Service requests'),
-    training: tr('Formations', 'Training'),
-    stores: tr('Boutiques', 'Stores'),
-    media: tr('Médias & vidéos', 'Media & videos'),
-    settings: tr('Paramètres', 'Settings'),
-  };
   const data = adminData();
-  const view = state.adminView || 'home';
-  const requestCount = data.requests.filter((item) => !['done'].includes(item.status)).length;
-  return shell(`<main class="admin-app">
-    <header class="admin-topbar"><div class="admin-topbar__context"><span>MIRS / ADMINISTRATION</span><b>${tr('Poste de pilotage', 'Control room')}</b></div><div class="admin-topbar__actions"><span class="admin-local-state"><i></i>${tr('Données locales', 'Local data')}</span><a href="${pageHref('/') }" data-link>${tr('Retour au site', 'Return to site')}</a><a href="${alternateLanguageHref()}" data-link>${state.locale === 'fr' ? 'EN' : 'FR'}</a><button type="button" data-admin-logout>${tr('Déconnexion', 'Sign out')}</button><button type="button" data-theme aria-label="${tr('Changer de thème', 'Change theme')}">◐</button></div></header>
-    <div class="admin-layout">
-      <aside class="admin-sidebar"><a href="${pageHref('/admin')}" data-link class="admin-sidebar__brand">${brandMark()}<span><b>MIRS</b><small>SPATIAL SYSTEMS</small></span></a><div class="admin-sidebar__label">${tr('ESPACES DE GESTION', 'MANAGEMENT SPACES')}</div><nav class="admin-nav" aria-label="${tr('Navigation administration', 'Administration navigation')}">${Object.entries(labels).map(([key, label]) => `<button type="button" data-admin-view="${key}" aria-current="${view === key ? 'page' : 'false'}"><span class="admin-nav__icon"></span><b>${label}</b>${key === 'services' && requestCount ? `<small>${requestCount}</small>` : ''}</button>`).join('')}</nav><div class="admin-sidebar__foot"><span>${tr('MIRS · Conakry', 'MIRS · Conakry')}</span><small>${tr('Espace de travail local', 'Local workspace')}</small></div></aside>
-      <section class="admin-main">${adminViewHeading(view)}${adminViewMarkup(view, data)}</section>
+  const open = (types) => data.requests.filter((item) => types.includes(item.type) && isOpen(item)).length;
+  const nav = [
+    ['home', tr('Vue d’ensemble', 'Overview'), 0],
+    ['urgent', tr('Maintenance & urgences', 'Maintenance & emergencies'), open(['urgent', 'ticket', 'contract'])],
+    ['orders', tr('Commandes', 'Orders'), open(['order'])],
+    ['enrolments', tr('Inscriptions', 'Registrations'), open(['enrolment'])],
+    ['requests', tr('Toutes les demandes', 'All requests'), data.requests.filter(isOpen).length],
+    ['training', tr('Formations & sessions', 'Courses & sessions'), 0],
+    ['stores', tr('Catalogue boutiques', 'Store catalogue'), 0],
+    ['content', tr('Contenus du site', 'Site content'), 0],
+    ['media', tr('Médias', 'Media'), 0],
+    ['settings', tr('Paramètres', 'Settings'), 0],
+  ];
+  const view = nav.some(([key]) => key === state.adminView) ? state.adminView : 'home';
+  const headings = {
+    home: [tr('VUE D’ENSEMBLE', 'OVERVIEW'), tr('Bonjour, voici <em>MIRS aujourd’hui.</em>', 'Hello, here is <em>MIRS today.</em>')],
+    urgent: [tr('MAINTENANCE', 'MAINTENANCE'), tr('Urgences & <em>interventions.</em>', 'Emergencies & <em>call-outs.</em>')],
+    orders: ['STORE', tr('Commandes <em>boutique.</em>', 'Store <em>orders.</em>')],
+    enrolments: ['ACADEMY', tr('Inscriptions aux <em>sessions.</em>', 'Session <em>registrations.</em>')],
+    requests: [tr('FILE DE SUIVI', 'TRACKING QUEUE'), tr('Toutes les <em>demandes.</em>', 'All <em>requests.</em>')],
+    training: ['ACADEMY', tr('Parcours & <em>calendrier.</em>', 'Pathways & <em>calendar.</em>')],
+    stores: ['STORE', tr('Catalogue & <em>visibilité.</em>', 'Catalogue & <em>visibility.</em>')],
+    content: [tr('SITE', 'SITE'), tr('Contenus du <em>site.</em>', 'Site <em>content.</em>')],
+    media: [tr('SITE', 'SITE'), tr('Films & <em>médias.</em>', 'Films & <em>media.</em>')],
+    settings: [tr('CONFIGURATION', 'SETTINGS'), tr('Paramètres & <em>données.</em>', 'Settings & <em>data.</em>')],
+  };
+  const [label, title] = headings[view];
+  return shell(`<main class="nva-app">
+    <aside class="nva-side" data-admin-side>
+      <a href="${pageHref('/admin')}" data-link class="nva-side__brand">${brandMark()}<span><b>MIRS</b><small>CONTROL ROOM</small></span></a>
+      <nav class="nva-nav" aria-label="${tr('Navigation administration', 'Administration navigation')}">${nav.map(([key, text, count]) => `<button type="button" data-admin-view="${key}" aria-current="${view === key ? 'page' : 'false'}" class="${key === 'urgent' && count ? 'has-alert' : ''}">${adminIcon(key === 'urgent' ? 'urgent' : key)}<b>${text}</b>${count ? `<small>${count}</small>` : ''}</button>`).join('')}</nav>
+      <div class="nva-side__foot"><span class="nv-amadeus-pill"><i aria-hidden="true"></i>${tr('Représentant exclusif AMADEUS', 'Exclusive AMADEUS representative')}</span><p class="nv-clock"><i></i>Conakry <b data-clock>--:--</b> GMT</p></div>
+    </aside>
+    <div class="nva-main">
+      <header class="nva-top">
+        <button type="button" class="nva-top__menu" data-admin-menu aria-label="Menu">${adminIcon('home')}</button>
+        <div class="nva-top__title"><span>${label}</span><h1>${title}</h1></div>
+        <div class="nva-top__actions"><a href="${pageHref('/')}" data-link class="nva-action">${tr('Voir le site', 'View site')} ↗</a><a href="${alternateLanguageHref()}" data-link class="nv-chip">${state.locale === 'fr' ? 'EN' : 'FR'}</a><button type="button" class="nv-chip nv-chip--icon" data-theme aria-label="${tr('Changer de thème', 'Change theme')}"><span class="nv-theme-icon" aria-hidden="true"></span></button><button type="button" class="nva-action" data-admin-logout>${tr('Déconnexion', 'Sign out')}</button></div>
+      </header>
+      ${adminViewMarkup(view, data)}
     </div>
-    <dialog class="admin-dialog" data-admin-dialog><form method="dialog" data-admin-content-form><div class="admin-dialog__head"><div><span>${tr('ÉDITION DE CONTENU', 'CONTENT EDITOR')}</span><h2>${tr('Mettre à jour une page.', 'Update a page.')}</h2></div><button type="button" data-admin-close-dialog aria-label="${tr('Fermer', 'Close')}">×</button></div><input type="hidden" name="id"><label>${tr('Zone', 'Area')}<input name="areaFr" required placeholder="Accueil MIRS"></label><label>${tr('Area in English', 'English area')}<input name="areaEn" required placeholder="MIRS home"></label><div class="admin-dialog__grid"><label>${tr('Titre FR', 'FR title')}<input name="titleFr" required></label><label>${tr('Titre EN', 'EN title')}<input name="titleEn" required></label></div><label>${tr('Statut', 'Status')}<select name="status"><option value="published">${tr('Publié', 'Published')}</option><option value="review">${tr('À relire', 'Review')}</option><option value="draft">${tr('Brouillon', 'Draft')}</option></select></label><div class="admin-dialog__actions"><button type="button" class="admin-action-button" data-admin-close-dialog>${tr('Annuler', 'Cancel')}</button><button type="submit" class="admin-action-button admin-action-button--accent">${tr('Enregistrer', 'Save')}</button></div></form></dialog>
-    <dialog class="admin-dialog" data-admin-training-dialog><form method="dialog" data-admin-training-form><div class="admin-dialog__head"><div><span>${tr('MIRS ACADEMY', 'MIRS ACADEMY')}</span><h2>${tr('Créer un module.', 'Create a module.')}</h2></div><button type="button" data-admin-close-dialog aria-label="${tr('Fermer', 'Close')}">×</button></div><div class="admin-dialog__grid"><label>${tr('Nom FR', 'FR name')}<input name="nameFr" required placeholder="Réseaux & systèmes"></label><label>${tr('Nom EN', 'EN name')}<input name="nameEn" required placeholder="Networks & systems"></label></div><div class="admin-dialog__grid"><label>${tr('Catégorie FR', 'FR category')}<input name="categoryFr" required placeholder="Déployer et administrer"></label><label>${tr('Catégorie EN', 'EN category')}<input name="categoryEn" required placeholder="Deploy and administer"></label></div><label>${tr('Statut', 'Status')}<select name="status"><option value="draft">${tr('Brouillon', 'Draft')}</option><option value="published">${tr('Publié', 'Published')}</option></select></label><div class="admin-dialog__actions"><button type="button" class="admin-action-button" data-admin-close-dialog>${tr('Annuler', 'Cancel')}</button><button type="submit" class="admin-action-button admin-action-button--accent">${tr('Enregistrer', 'Save')}</button></div></form></dialog>
+    <dialog class="nv-dialog" data-admin-dialog><form class="nv-dialog__form" data-admin-content-form><div class="nv-dialog__head"><div><span>${tr('ÉDITION DE CONTENU', 'CONTENT EDITOR')}</span><h2>${tr('Mettre à jour une <em>page.</em>', 'Update a <em>page.</em>')}</h2></div><button type="button" class="nv-dialog__close" data-dialog-close aria-label="${tr('Fermer', 'Close')}">×</button></div><input type="hidden" name="id"><div class="nv-dialog__grid"><label class="nv-field"><input name="areaFr" required placeholder=" "><span>${tr('Zone (FR)', 'Area (FR)')}</span></label><label class="nv-field"><input name="areaEn" required placeholder=" "><span>${tr('Zone (EN)', 'Area (EN)')}</span></label><label class="nv-field"><input name="titleFr" required placeholder=" "><span>${tr('Titre FR', 'FR title')}</span></label><label class="nv-field"><input name="titleEn" required placeholder=" "><span>${tr('Titre EN', 'EN title')}</span></label><label class="nv-field nv-field--select nv-field--wide"><select name="status"><option value="published">${tr('Publié', 'Published')}</option><option value="review">${tr('À relire', 'Review')}</option><option value="draft">${tr('Brouillon', 'Draft')}</option></select><span>${tr('Statut', 'Status')}</span></label></div><div class="nv-dialog__foot"><button type="button" class="nva-action" data-dialog-close>${tr('Annuler', 'Cancel')}</button><button type="submit" class="nv-btn nv-btn--primary">${roll(tr('Enregistrer', 'Save'))}<i aria-hidden="true">${ICON_CHECK}</i></button></div></form></dialog>
+    <dialog class="nv-video" data-video-modal><button type="button" class="nv-video__close" data-close-video aria-label="${tr('Fermer la vidéo', 'Close video')}">×</button><div class="nv-video__body" data-video-body></div></dialog>
+    <div class="nv-toast" data-toast role="status" aria-live="polite"></div>
   </main>`, '/admin');
+}
+
+function exportRequests(type) {
+  const rows = adminData().requests.filter((item) => type === 'all' || item.type === type);
+  const header = ['id', 'type', 'status', 'priority', 'updated', 'customer', 'phone', 'email', 'service', 'session', 'detail', 'lines'];
+  const escapeCell = (value) => `"${String(value ?? '').replaceAll('"', '""')}"`;
+  const csv = [header.join(';'), ...rows.map((item) => header.map((key) => escapeCell(key === 'lines' ? (item.lines || []).map((line) => `${line.qty}x ${line.name}${line.option ? ` (${line.option})` : ''}`).join(' | ') : item[key])).join(';'))].join('\n');
+  const url = URL.createObjectURL(new Blob([`﻿${csv}`], { type: 'text/csv;charset=utf-8' }));
+  const anchorNode = document.createElement('a');
+  anchorNode.href = url;
+  anchorNode.download = `mirs-${type}-${isoToday()}.csv`;
+  document.body.append(anchorNode);
+  anchorNode.click();
+  anchorNode.remove();
+  setTimeout(() => URL.revokeObjectURL(url), 1000);
+}
+
+
+/* ---------------- AMADEUS ---------------- */
+
+function amadeusPage() {
+  const course = academyCourses.find((item) => item.amadeus);
+  const sessions = course ? courseSessions(course) : [];
+  const pillars = [
+    ['01', tr('Représentation exclusive', 'Exclusive representation'), tr('MIRS est l’interlocuteur exclusif d’AMADEUS : un point d’entrée unique pour les agences et les entreprises qui veulent accéder à la solution.', 'MIRS is the exclusive AMADEUS partner: a single entry point for agencies and companies who want to access the solution.')],
+    ['02', tr('Déploiement en agence', 'Agency deployment'), tr('Installation des postes, paramétrage, accès des agents et mise en route des premiers dossiers.', 'Workstation installation, set-up, agent access and first live bookings.')],
+    ['03', tr('Formation des équipes', 'Team training'), tr('Le parcours AMADEUS Selling Platform de MIRS Academy rend les agents opérationnels sur le système.', 'The MIRS Academy AMADEUS Selling Platform pathway makes agents operational on the system.')],
+    ['04', tr('Assistance & suivi', 'Support & follow-up'), tr('Un interlocuteur local pour les questions du quotidien, les évolutions et les nouveaux collaborateurs.', 'A local contact for daily questions, changes and new team members.')],
+  ];
+  const steps = [
+    [tr('Échange', 'Discovery'), tr('Comprendre votre activité, votre équipe et vos besoins de réservation.', 'Understand your business, team and booking needs.')],
+    [tr('Proposition', 'Proposal'), tr('Définir l’accès AMADEUS adapté et le plan de mise en place.', 'Define the right AMADEUS access and roll-out plan.')],
+    [tr('Mise en place', 'Set-up'), tr('Installer, paramétrer et connecter vos postes.', 'Install, configure and connect your workstations.')],
+    [tr('Formation', 'Training'), tr('Former les agents sur des cas réels.', 'Train agents on real cases.')],
+    [tr('Suivi', 'Follow-up'), tr('Rester présent quand l’activité démarre.', 'Stay close as activity takes off.')],
+  ];
+  return shell(`<main class="nv-amadeus">
+    <section class="nv-amadeus-hero" data-hero>
+      <canvas class="nv-hero__field" data-field aria-hidden="true"></canvas>
+      <div class="nv-hero__aurora" aria-hidden="true"><span></span><span></span><span></span></div>
+      <div class="nv-hero__grid" aria-hidden="true"></div>
+      <div class="nv-amadeus-hero__word" aria-hidden="true" data-speed="0.1">AMADEUS</div>
+      <div class="nv-wrap nv-amadeus-hero__layout">
+        <div>
+          <div class="nv-hero__meta" data-nv="fade"><span>MIRS × AMADEUS</span><span>${tr('REPRÉSENTATION EXCLUSIVE', 'EXCLUSIVE REPRESENTATION')}</span><span>CONAKRY</span></div>
+          <p class="nv-amadeus-pill nv-amadeus-pill--lg" data-nv="up"><i aria-hidden="true"></i>${tr('Représentant exclusif d’AMADEUS', 'Exclusive AMADEUS representative')}</p>
+          ${sectionTitle(tr('Le système de réservation mondial, <em>avec MIRS.</em>', 'The global booking system, <em>with MIRS.</em>'), 'nv-page-hero__title', 'h1')}
+          <p data-nv="up" style="--d:200ms">${tr('Agences de voyage et entreprises : MIRS vous ouvre l’accès à AMADEUS, déploie la solution et forme vos équipes, avec un accompagnement local à Conakry.', 'Travel agencies and companies: MIRS opens access to AMADEUS, deploys the solution and trains your teams, with local support in Conakry.')}</p>
+          <div class="nv-hero__actions" data-nv="up" style="--d:300ms">${button('/contact', tr('Devenir partenaire AMADEUS', 'Become an AMADEUS partner'), 'primary')}${course ? `<button type="button" class="nv-btn nv-btn--ghost" data-enroll="${course.slug}" data-magnetic>${roll(tr('S’inscrire à la formation', 'Enrol in the training'))}<i aria-hidden="true">${ICON_ARROW}</i></button>` : ''}</div>
+        </div>
+        <div class="nv-globe" aria-hidden="true">
+          <div class="nv-globe__sphere"><i></i><i></i><i></i><i></i></div>
+          <div class="nv-globe__orbit"><span>GDS</span></div>
+          <div class="nv-globe__orbit nv-globe__orbit--b"><span>PNR</span></div>
+          <div class="nv-globe__orbit nv-globe__orbit--c"><span>e-TKT</span></div>
+          <b>AMADEUS</b>
+        </div>
+      </div>
+    </section>
+
+    ${marquee(['AMADEUS', tr('REPRÉSENTANT EXCLUSIF', 'EXCLUSIVE REPRESENTATIVE'), tr('RÉSERVATION', 'BOOKING'), tr('BILLETTERIE', 'TICKETING'), tr('FORMATION', 'TRAINING')], 'nv-marquee--alt')}
+
+    <section class="nv-section nv-wrap">
+      <div class="nv-head"><div>${eyebrow(tr('CE QUE L’EXCLUSIVITÉ CHANGE POUR VOUS', 'WHAT EXCLUSIVITY MEANS FOR YOU'), '01')}${sectionTitle(tr('Un seul interlocuteur,<br>de l’accès à <em>l’usage.</em>', 'One single partner,<br>from access to <em>daily use.</em>'))}</div><p data-nv="up">${tr('MIRS réunit la représentation, la mise en place technique et la formation : vos équipes avancent sans multiplier les intermédiaires.', 'MIRS brings together representation, technical set-up and training: your teams move forward without multiple intermediaries.')}</p></div>
+      <div class="nv-capabilities">${pillars.map(([index, title, text], position) => `<article class="nv-capability" data-spot data-nv="up" style="--d:${position * 80}ms"><div class="nv-capability__top"><span>${index}</span><i aria-hidden="true">${ICON_ARROW}</i></div><div class="nv-capability__glyph" aria-hidden="true"><i></i><i></i><i></i></div><h3>${title}</h3><p>${text}</p></article>`).join('')}</div>
+    </section>
+
+    <section class="nv-section nv-wrap nv-process" data-progress>
+      <div class="nv-head"><div>${eyebrow(tr('DEVENIR UTILISATEUR', 'GETTING STARTED'), '02')}${sectionTitle(tr('De l’échange au premier<br><em>billet émis.</em>', 'From first call to first<br><em>ticket issued.</em>'))}</div></div>
+      <div class="nv-process__line" aria-hidden="true"><span></span></div>
+      <ol class="nv-process__rail">${steps.map((step, index) => `<li data-nv="up" style="--d:${index * 90}ms"><span class="nv-process__dot" aria-hidden="true"></span><small>0${index + 1}</small><b>${step[0]}</b><p>${step[1]}</p></li>`).join('')}</ol>
+    </section>
+
+    ${course ? `<section class="nv-section nv-wrap nv-amadeus-training">
+      <div class="nv-amadeus-training__card" data-spot>
+        <div>${eyebrow(tr('MIRS ACADEMY × AMADEUS', 'MIRS ACADEMY × AMADEUS'), '03')}${sectionTitle(local(course.name))}<p data-nv="up">${local(course.summary)}</p>
+          <ul class="nv-meta-list" data-nv="up"><li><small>${tr('Durée', 'Duration')}</small><b>${local(course.duration)}</b></li><li><small>${tr('Niveau', 'Level')}</small><b>${local(course.level)}</b></li><li><small>Format</small><b>${local(course.format)}</b></li><li><small>Modules</small><b>${course.modules.length}</b></li></ul>
+          <div class="nv-hero__actions" data-nv="up">${button(`/formation/${course.slug}`, tr('Voir le programme', 'View the programme'), 'ghost')}</div>
+        </div>
+        <div class="nv-sessions">${sessionList(course, sessions)}</div>
+      </div>
+    </section>` : ''}
+
+    <section class="nv-feature-film nv-wrap" data-progress="enter">
+      <button type="button" class="nv-feature-film__frame" data-video="mirs-media/mirs-company-presentation.mp4" data-video-title="MIRS × AMADEUS" data-cursor="${tr('Lecture', 'Play')}">
+        <img src="${AS}mirs-media/posters/company.jpg" alt="" loading="lazy" data-speed="-0.05">
+        <span class="nv-film__veil" aria-hidden="true"></span>
+        <span class="nv-play-orb nv-play-orb--lg">${ICON_PLAY}</span>
+        <span class="nv-feature-film__caption"><small>MIRS × AMADEUS</small>${tr('Découvrir MIRS en vidéo', 'Discover MIRS on film')}</span>
+      </button>
+    </section>
+
+    ${closingPortal(tr('Travaillons ensemble sur <em>AMADEUS.</em>', 'Let’s work together on <em>AMADEUS.</em>'), tr('Création d’agence, accès à la solution ou formation de vos agents : parlons de votre projet.', 'Agency creation, access to the solution or agent training: let’s talk about your project.'), tr('Contacter le représentant', 'Contact the representative'))}
+  </main>`, '/amadeus');
+}
+
+/* ---------------- Academy (e-learning catalogue) ---------------- */
+
+function sessionList(course, sessions = courseSessions(course)) {
+  if (!sessions.length) {
+    return `<div class="nv-session nv-session--empty"><b>${tr('Prochaine session en préparation', 'Next session being scheduled')}</b><small>${tr('Inscrivez-vous : MIRS vous contacte dès que la date est fixée.', 'Register: MIRS will contact you as soon as the date is set.')}</small><button type="button" class="nv-btn nv-btn--primary nv-btn--sm" data-enroll="${course.slug}" data-magnetic>${roll(tr('Être prévenu', 'Get notified'))}<i aria-hidden="true">${ICON_ARROW}</i></button></div>`;
+  }
+  return `${sessions.map((session, index) => `<div class="nv-session ${index === 0 ? 'is-next' : ''}">
+      <div class="nv-session__date"><b>${formatDate(session.date, 'short')}</b><small>${new Date(`${session.date}T12:00:00`).getFullYear()}</small></div>
+      <div class="nv-session__copy">${index === 0 ? `<span class="nv-session__badge">${tr('Prochaine session', 'Next session')}</span>` : ''}<b>${formatDate(session.date)}</b><small>${session.place || 'Conakry'} · ${local(course.duration)}</small></div>
+      <button type="button" class="nv-btn nv-btn--${index === 0 ? 'primary' : 'ghost'} nv-btn--sm" data-enroll="${course.slug}" data-session="${session.date}" data-magnetic>${roll(tr('S’inscrire', 'Enrol'))}<i aria-hidden="true">${ICON_ARROW}</i></button>
+    </div>`).join('')}<p class="nv-sessions__note">${local(SESSIONS_NOTE)}</p>`;
+}
+
+function courseCard(course, index = 0) {
+  const next = courseSessions(course)[0];
+  const lessons = course.modules.reduce((total, module) => total + module.lessons.length, 0);
+  return `<article class="nv-ecourse ${course.amadeus ? 'is-amadeus' : ''}" data-course-card data-category="${course.categoryKey}" data-spot data-nv="up" style="--d:${(index % 3) * 80}ms">
+    <a href="${pageHref(`/formation/${course.slug}`)}" data-link class="nv-ecourse__cover" data-cursor="${tr('Programme', 'Syllabus')}">
+      <span class="nv-ecourse__code">${course.short}</span>
+      ${course.amadeus ? `<span class="nv-amadeus-pill"><i aria-hidden="true"></i>${tr('Représentant exclusif', 'Exclusive representative')}</span>` : `<span class="nv-ecourse__cat">${local(course.category)}</span>`}
+      <span class="nv-ecourse__lines" aria-hidden="true"><i></i><i></i><i></i></span>
+    </a>
+    <div class="nv-ecourse__body">
+      <small>${local(course.category)} · ${local(course.level)}</small>
+      <h3><a href="${pageHref(`/formation/${course.slug}`)}" data-link>${local(course.name)}</a></h3>
+      <p>${local(course.summary)}</p>
+      <ul class="nv-ecourse__facts"><li>${local(course.duration)}</li><li>${course.modules.length} modules · ${lessons} ${tr('leçons', 'lessons')}</li></ul>
+      <div class="nv-ecourse__next">${next ? `<span><i aria-hidden="true"></i>${tr('Prochaine session', 'Next session')}</span><b>${formatDate(next.date)}</b>` : `<span><i aria-hidden="true"></i>${tr('Session en préparation', 'Session being scheduled')}</span>`}</div>
+      <div class="nv-ecourse__actions"><button type="button" class="nv-btn nv-btn--primary nv-btn--sm" data-enroll="${course.slug}" ${next ? `data-session="${next.date}"` : ''} data-magnetic>${roll(tr('S’inscrire', 'Enrol'))}<i aria-hidden="true">${ICON_ARROW}</i></button>${link(`/formation/${course.slug}`, tr('Programme', 'Syllabus'))}</div>
+    </div>
+  </article>`;
+}
+
+function training() {
+  const data = adminData();
+  const visible = academyCourses.filter((course) => isCoursePublished(course.slug));
+  const featured = visible.find((course) => course.amadeus);
+  const upcoming = visible.flatMap((course) => courseSessions(course, data).map((session) => ({ course, session }))).sort((a, b) => a.session.date.localeCompare(b.session.date)).slice(0, 6);
+  const categories = [...new Map(visible.map((course) => [course.categoryKey, local(course.category)])).entries()];
+  const totalModules = visible.reduce((total, course) => total + course.modules.length, 0);
+  const totalLessons = visible.reduce((total, course) => total + course.modules.reduce((sum, module) => sum + module.lessons.length, 0), 0);
+  const myEnrolments = data.requests.filter((item) => item.type === 'enrolment').slice(0, 3);
+  return shell(`<main class="nv-academy">
+    <section class="nv-academy-hero" data-hero>
+      <canvas class="nv-hero__field" data-field aria-hidden="true"></canvas>
+      <div class="nv-hero__aurora" aria-hidden="true"><span></span><span></span><span></span></div>
+      <div class="nv-hero__grid" aria-hidden="true"></div>
+      <div class="nv-academy-hero__layout nv-wrap">
+        <div class="nv-academy-hero__copy">
+          <div class="nv-hero__meta" data-nv="fade"><span>MIRS ACADEMY</span><span>${tr('E-LEARNING & PRÉSENTIEL', 'E-LEARNING & IN PERSON')}</span></div>
+          ${sectionTitle(tr('Apprendre,<br>puis savoir<br><em>faire.</em>', 'Learn.<br>Apply.<br><em>Perform.</em>'), 'nv-academy-hero__title', 'h1')}
+          <p data-nv="up" style="--d:220ms">${tr('Des parcours structurés en modules, des sessions planifiées et un suivi après la formation. Choisissez votre parcours et réservez votre place.', 'Pathways structured into modules, scheduled sessions and follow-up after training. Choose your pathway and book your seat.')}</p>
+          <div class="nv-hero__actions" data-nv="up" style="--d:320ms"><a href="#catalogue" class="nv-btn nv-btn--primary" data-magnetic>${roll(tr('Voir les parcours', 'Browse pathways'))}<i aria-hidden="true">${ICON_DOWN}</i></a><a href="#calendrier" class="nv-btn nv-btn--ghost" data-magnetic>${roll(tr('Prochaines sessions', 'Upcoming sessions'))}<i aria-hidden="true">${ICON_DOWN}</i></a></div>
+          <div class="nv-academy-stats" data-nv="up" style="--d:420ms"><div><b data-count="${visible.length}" data-pad="2">${String(visible.length).padStart(2, '0')}</b><span>${tr('parcours', 'pathways')}</span></div><div><b data-count="${totalModules}">${totalModules}</b><span>modules</span></div><div><b data-count="${totalLessons}">${totalLessons}</b><span>${tr('leçons', 'lessons')}</span></div><div><b data-count="${upcoming.length}" data-pad="2">${String(upcoming.length).padStart(2, '0')}</b><span>${tr('sessions à venir', 'upcoming sessions')}</span></div></div>
+        </div>
+        ${featured ? `<a href="${pageHref(`/formation/${featured.slug}`)}" data-link class="nv-featured-course" data-tilt data-spot>
+          <span class="nv-amadeus-pill"><i aria-hidden="true"></i>${tr('Représentant exclusif AMADEUS', 'Exclusive AMADEUS representative')}</span>
+          <b class="nv-featured-course__word">AMADEUS</b>
+          <span class="nv-featured-course__name">${local(featured.name)}</span>
+          <span class="nv-featured-course__meta">${local(featured.duration)} · ${featured.modules.length} modules</span>
+          ${courseSessions(featured, data)[0] ? `<span class="nv-featured-course__next">${tr('Prochaine session', 'Next session')} · <b>${formatDate(courseSessions(featured, data)[0].date)}</b></span>` : ''}
+          <i aria-hidden="true">${ICON_ARROW}</i>
+        </a>` : ''}
+      </div>
+    </section>
+
+    ${marquee(visible.map((course) => local(course.name).toUpperCase()), 'nv-marquee--solo')}
+
+    <section class="nv-section nv-wrap" id="catalogue">
+      <div class="nv-head"><div>${eyebrow(tr('CATALOGUE DES PARCOURS', 'PATHWAY CATALOGUE'), '01')}${sectionTitle(tr('Des parcours qui passent<br>à l’<em>action.</em>', 'Pathways that move<br>into <em>action.</em>'))}</div><p data-nv="up">${tr('Chaque parcours est découpé en modules et leçons. Ouvrez le programme pour voir le détail, puis réservez une session.', 'Each pathway is broken down into modules and lessons. Open the syllabus for details, then book a session.')}</p></div>
+      <div class="nv-filters" role="toolbar" aria-label="${tr('Filtrer les parcours', 'Filter pathways')}"><span class="nv-filters__pill" aria-hidden="true" data-filter-pill></span><button type="button" data-filter="all" data-filter-scope="course" class="is-active">${tr('Tous', 'All')}</button>${categories.map(([key, label]) => `<button type="button" data-filter="${key}" data-filter-scope="course">${label}</button>`).join('')}</div>
+      <div class="nv-ecourses">${visible.map(courseCard).join('')}</div>
+    </section>
+
+    <section class="nv-section nv-wrap nv-calendar" id="calendrier">
+      <div class="nv-head"><div>${eyebrow(tr('CALENDRIER', 'CALENDAR'), '02')}${sectionTitle(tr('Les prochaines<br><em>sessions.</em>', 'Upcoming<br><em>sessions.</em>'))}</div><p data-nv="up">${local(SESSIONS_NOTE)} ${tr('Les sessions en entreprise se planifient à la demande.', 'In-company sessions are scheduled on request.')}</p></div>
+      <ol class="nv-calendar__list">${upcoming.map(({ course, session }, index) => `<li data-spot data-nv="up" style="--d:${index * 60}ms">
+        <div class="nv-calendar__date"><b>${new Date(`${session.date}T12:00:00`).getDate()}</b><small>${formatDate(session.date, 'short').replace(/^\d+\s*/, '')}</small></div>
+        <div class="nv-calendar__copy"><small>${local(course.category)}${course.amadeus ? ` · ${tr('Représentant exclusif', 'Exclusive representative')}` : ''}</small><b>${local(course.name)}</b><span>${formatDate(session.date)} · ${session.place || 'Conakry'} · ${local(course.duration)}</span></div>
+        <button type="button" class="nv-btn nv-btn--primary nv-btn--sm" data-enroll="${course.slug}" data-session="${session.date}" data-magnetic>${roll(tr('Réserver ma place', 'Book my seat'))}<i aria-hidden="true">${ICON_ARROW}</i></button>
+      </li>`).join('') || `<li class="nv-calendar__empty">${tr('De nouvelles sessions arrivent bientôt.', 'New sessions are coming soon.')}</li>`}</ol>
+    </section>
+
+    <section class="nv-section nv-wrap nv-path" data-progress>
+      <div class="nv-path__intro">${eyebrow(tr('COMMENT ÇA SE PASSE', 'HOW IT WORKS'), '03')}${sectionTitle(tr('De l’inscription<br><em>au savoir-faire.</em>', 'From registration<br><em>to know-how.</em>'))}</div>
+      <ol class="nv-path__list"><span class="nv-path__line" aria-hidden="true"><i></i></span>${[
+        [tr('Inscription', 'Registration'), tr('Choisissez un parcours et une session, MIRS confirme votre place.', 'Choose a pathway and a session; MIRS confirms your seat.')],
+        [tr('Positionnement', 'Assessment'), tr('Nous identifions votre niveau et vos objectifs.', 'We identify your level and objectives.')],
+        [tr('Modules pratiques', 'Hands-on modules'), tr('Chaque module combine démonstration, exercices et cas réels.', 'Each module combines demos, exercises and real cases.')],
+        [tr('Évaluation & suivi', 'Assessment & follow-up'), tr('Un bilan des acquis et un point de contact après la session.', 'A skills review and a point of contact after the session.')],
+      ].map((step, index) => `<li data-nv="up" style="--d:${index * 90}ms"><span>0${index + 1}</span><div><b>${step[0]}</b><p>${step[1]}</p></div></li>`).join('')}</ol>
+    </section>
+
+    ${myEnrolments.length ? `<section class="nv-section nv-wrap nv-mine"><div class="nv-mine__card" data-spot>${eyebrow(tr('MES DEMANDES D’INSCRIPTION', 'MY REGISTRATION REQUESTS'))}<ul>${myEnrolments.map((item) => `<li><b>${escapeHtml(item.courseName || item.service)}</b><span>${item.session ? formatDate(item.session) : tr('Date à confirmer', 'Date to be confirmed')}</span><small>${item.id}</small></li>`).join('')}</ul><p>${tr('Enregistrées sur cet appareil. MIRS confirme chaque inscription par WhatsApp ou téléphone.', 'Saved on this device. MIRS confirms each registration by WhatsApp or phone.')}</p></div></section>` : ''}
+
+    <section class="nv-quote nv-wrap" data-progress="enter">
+      <figure class="nv-quote__media"><img src="${AS}editorial/formation-collaboration.jpg" alt="${tr('Échange pendant une formation MIRS', 'Discussion during a MIRS training session')}" loading="lazy" data-speed="-0.06"></figure>
+      <div class="nv-quote__copy" data-spot><span aria-hidden="true">“</span><p data-scrub>${tr('Une bonne formation se mesure à ce que les équipes peuvent appliquer après la session.', 'Good training is measured by what teams can apply after the session.')}</p>${button('/contact', tr('Former toute une équipe', 'Train a whole team'), 'primary')}</div>
+    </section>
+
+    ${closingPortal(tr('Réservez votre place à la prochaine <em>session.</em>', 'Book your seat at the next <em>session.</em>'), tr('Inscription individuelle ou groupe d’entreprise : MIRS confirme la date et les modalités.', 'Individual or company group registration: MIRS confirms the date and terms.'), tr('Parler à l’Academy', 'Talk to the Academy'))}
+  </main>`, '/formation');
+}
+
+function courseDetail(slug) {
+  const course = academyCourses.find((item) => item.slug === slug);
+  if (!course || !isCoursePublished(slug)) return notFound();
+  const sessions = courseSessions(course);
+  const lessons = course.modules.reduce((total, module) => total + module.lessons.length, 0);
+  const others = academyCourses.filter((item) => item.slug !== slug && isCoursePublished(item.slug)).slice(0, 3);
+  return shell(`<main class="nv-course">
+    <section class="nv-course-hero" data-hero>
+      <div class="nv-hero__aurora" aria-hidden="true"><span></span><span></span><span></span></div>
+      <div class="nv-hero__grid" aria-hidden="true"></div>
+      <div class="nv-wrap">
+        <nav class="nv-crumbs" aria-label="${tr('Fil d’Ariane', 'Breadcrumb')}" data-nv="fade"><a href="${pageHref('/formation')}" data-link>MIRS Academy</a><span>/</span><span>${local(course.name)}</span></nav>
+        <div class="nv-course-hero__layout">
+          <div>
+            ${course.amadeus ? `<p class="nv-amadeus-pill nv-amadeus-pill--lg" data-nv="up"><i aria-hidden="true"></i>${tr('Par le représentant exclusif d’AMADEUS', 'By the exclusive AMADEUS representative')}</p>` : eyebrow(local(course.category))}
+            ${sectionTitle(local(course.name), 'nv-page-hero__title', 'h1')}
+            <p data-nv="up" style="--d:200ms">${local(course.summary)}</p>
+            <ul class="nv-meta-list" data-nv="up" style="--d:280ms"><li><small>${tr('Durée', 'Duration')}</small><b>${local(course.duration)}</b></li><li><small>${tr('Niveau', 'Level')}</small><b>${local(course.level)}</b></li><li><small>Format</small><b>${local(course.format)}</b></li><li><small>${tr('Contenu', 'Content')}</small><b>${course.modules.length} modules · ${lessons} ${tr('leçons', 'lessons')}</b></li></ul>
+          </div>
+          <aside class="nv-enroll-card" data-spot data-nv="up" style="--d:300ms">
+            <span class="nv-enroll-card__code">${course.short}</span>
+            <b>${sessions[0] ? formatDate(sessions[0].date) : tr('Session en préparation', 'Session being scheduled')}</b>
+            <small>${sessions[0] ? `${tr('Prochaine session', 'Next session')} · ${sessions[0].place || 'Conakry'}` : tr('Inscrivez-vous pour être prévenu', 'Register to be notified')}</small>
+            <button type="button" class="nv-btn nv-btn--primary nv-btn--lg nv-btn--block" data-enroll="${course.slug}" ${sessions[0] ? `data-session="${sessions[0].date}"` : ''} data-magnetic>${roll(tr('S’inscrire à la session', 'Enrol in the session'))}<i aria-hidden="true">${ICON_ARROW}</i></button>
+            <button type="button" class="nv-add" data-add="${tr('Formation', 'Training')} : ${local(course.name)}" data-add-kind="course">${tr('Ajouter au panier pour un groupe', 'Add to cart for a group')} <i aria-hidden="true">${ICON_PLUS}</i></button>
+            <p>${local(SESSIONS_NOTE)}</p>
+          </aside>
+        </div>
+      </div>
+    </section>
+
+    <section class="nv-section nv-wrap nv-course-body">
+      <div class="nv-course-body__main">
+        <div class="nv-course-block">${eyebrow(tr('OBJECTIFS', 'OBJECTIVES'), '01')}<ul class="nv-checks">${course.objectives.map((objective) => `<li data-nv="up"><i aria-hidden="true">${ICON_CHECK}</i>${local(objective)}</li>`).join('')}</ul></div>
+        <div class="nv-course-block">${eyebrow(tr('PROGRAMME DÉTAILLÉ', 'DETAILED SYLLABUS'), '02')}
+          <div class="nv-curriculum">${course.modules.map((module, index) => `<details class="nv-module" ${index === 0 ? 'open' : ''} data-nv="up" style="--d:${index * 50}ms">
+            <summary><span class="nv-module__index">${String(index + 1).padStart(2, '0')}</span><span class="nv-module__title"><b>${local(module.title)}</b><small>${module.lessons.length} ${tr('leçons', 'lessons')} · ${module.duration}</small></span><i aria-hidden="true">${ICON_PLUS}</i></summary>
+            <ol>${module.lessons.map((lesson, lessonIndex) => `<li><span>${index + 1}.${lessonIndex + 1}</span>${local(lesson)}</li>`).join('')}</ol>
+          </details>`).join('')}</div>
+        </div>
+        <div class="nv-course-grid">
+          <div class="nv-course-block nv-course-block--card" data-spot>${eyebrow(tr('PUBLIC', 'AUDIENCE'))}<p>${local(course.audience)}</p></div>
+          <div class="nv-course-block nv-course-block--card" data-spot>${eyebrow(tr('PRÉREQUIS', 'PREREQUISITES'))}<p>${local(course.prerequisites)}</p></div>
+        </div>
+      </div>
+      <aside class="nv-course-body__side"><div class="nv-sessions nv-sessions--sticky">${eyebrow(tr('SESSIONS À VENIR', 'UPCOMING SESSIONS'), '03')}${sessionList(course, sessions)}</div></aside>
+    </section>
+
+    ${others.length ? `<section class="nv-section nv-wrap"><div class="nv-head"><div>${eyebrow(tr('À DÉCOUVRIR AUSSI', 'ALSO WORTH EXPLORING'))}${sectionTitle(tr('D’autres <em>parcours.</em>', 'Other <em>pathways.</em>'))}</div>${link('/formation', tr('Tout le catalogue', 'Full catalogue'))}</div><div class="nv-ecourses">${others.map(courseCard).join('')}</div></section>` : ''}
+
+    ${closingPortal(tr('Votre place vous <em>attend.</em>', 'Your seat is <em>waiting.</em>'), tr('Réservez maintenant : MIRS vous confirme la date, le lieu et les modalités.', 'Book now: MIRS confirms the date, venue and terms.'), tr('Poser une question', 'Ask a question'))}
+  </main>`, `/formation/${slug}`);
+}
+
+function enrollDialog() {
+  const visible = academyCourses.filter((course) => isCoursePublished(course.slug));
+  return `<dialog class="nv-dialog" data-enroll-dialog aria-labelledby="nv-enroll-title">
+    <form class="nv-dialog__form" data-enroll-form>
+      <div class="nv-dialog__head"><div><span>MIRS ACADEMY</span><h2 id="nv-enroll-title">${tr('Réserver ma <em>place.</em>', 'Book my <em>seat.</em>')}</h2></div><button type="button" class="nv-dialog__close" data-dialog-close aria-label="${tr('Fermer', 'Close')}">×</button></div>
+      <div class="nv-dialog__grid">
+        <label class="nv-field nv-field--select nv-field--wide"><select name="course" required data-enroll-course>${visible.map((course) => `<option value="${course.slug}">${local(course.name)}</option>`).join('')}</select><span>${tr('Parcours', 'Pathway')}</span></label>
+        <label class="nv-field nv-field--select nv-field--wide"><select name="session" data-enroll-session></select><span>Session</span></label>
+        <label class="nv-field"><input required name="name" autocomplete="name" placeholder=" "><span>${tr('Nom et prénom', 'Full name')}</span></label>
+        <label class="nv-field"><input required name="phone" type="tel" autocomplete="tel" placeholder=" "><span>${tr('Téléphone / WhatsApp', 'Phone / WhatsApp')}</span></label>
+        <label class="nv-field"><input name="email" type="email" autocomplete="email" placeholder=" "><span>Email</span></label>
+        <label class="nv-field"><input name="company" autocomplete="organization" placeholder=" "><span>${tr('Organisation (facultatif)', 'Organization (optional)')}</span></label>
+        <label class="nv-field nv-field--select"><select name="seats">${[1, 2, 3, 4, 5, 6, 8, 10, 12, 15, 20].map((value) => `<option value="${value}">${value} ${value > 1 ? tr('participants', 'participants') : tr('participant', 'participant')}</option>`).join('')}</select><span>${tr('Participants', 'Participants')}</span></label>
+        <label class="nv-field nv-field--select"><select name="funding"><option>${tr('Inscription individuelle', 'Individual registration')}</option><option>${tr('Prise en charge entreprise', 'Company-funded')}</option></select><span>${tr('Financement', 'Funding')}</span></label>
+        <label class="nv-field nv-field--wide"><textarea name="note" rows="3" placeholder=" "></textarea><span>${tr('Votre niveau ou vos attentes (facultatif)', 'Your level or expectations (optional)')}</span></label>
+      </div>
+      <div class="nv-dialog__foot"><p>${tr('Votre demande est envoyée à MIRS sur WhatsApp. Une confirmation suit avec la date et les modalités.', 'Your request is sent to MIRS on WhatsApp. A confirmation follows with the date and terms.')}</p><button type="submit" class="nv-btn nv-btn--primary nv-btn--lg" data-magnetic>${roll(tr('Confirmer ma demande', 'Confirm my request'))}<i aria-hidden="true">${ICON_ARROW}</i></button></div>
+    </form>
+    <div class="nv-dialog__done" data-enroll-done hidden></div>
+  </dialog>`;
+}
+
+/* ---------------- Maintenance & emergency ---------------- */
+
+function maintenancePage() {
+  const data = state.locale === 'en' ? { ...branchData.maintenance, ...branchTranslations.maintenance } : branchData.maintenance;
+  const reflexes = [
+    tr('Vérifier l’alimentation électrique et l’onduleur.', 'Check the power supply and UPS.'),
+    tr('Redémarrer la box ou le routeur en cas de coupure internet.', 'Restart the modem or router if the internet is down.'),
+    tr('Noter le message d’erreur exact (une photo suffit).', 'Note the exact error message (a photo is enough).'),
+    tr('Virus suspecté : débrancher le poste du réseau, ne pas l’éteindre.', 'Suspected virus: unplug the machine from the network, do not shut it down.'),
+    tr('Identifier qui est bloqué : un poste, une équipe, toute l’activité.', 'Identify who is blocked: one machine, a team, or the whole business.'),
+  ];
+  return shell(`<main class="nv-maint">
+    <section class="nv-maint-hero" data-hero>
+      <div class="nv-unit-hero__media"><img src="${AS}editorial/maintenance-pc.jpg" alt="" loading="eager" data-speed="0.12"></div>
+      <div class="nv-unit-hero__veil" aria-hidden="true"></div>
+      <div class="nv-hero__grid" aria-hidden="true"></div>
+      <div class="nv-wrap nv-maint-hero__layout">
+        <div>
+          <div class="nv-hero__meta" data-nv="fade"><span>05 / ${tr('CONTINUITÉ', 'CONTINUITY')}</span><span>CARE / 05</span><span>CONAKRY</span></div>
+          ${sectionTitle(tr('Maintenance &<br><em>intervention.</em>', 'Maintenance &<br><em>call-out.</em>'), 'nv-unit-hero__title', 'h1')}
+          <p data-nv="up" style="--d:220ms">${data.intro}</p>
+          <div class="nv-hero__actions" data-nv="up" style="--d:320ms"><a href="#demande" class="nv-btn nv-btn--ghost" data-magnetic>${roll(tr('Demande non urgente', 'Non-urgent request'))}<i aria-hidden="true">${ICON_DOWN}</i></a><a href="#contrat" class="nv-btn nv-btn--ghost" data-magnetic>${roll(tr('Contrat de maintenance', 'Maintenance contract'))}<i aria-hidden="true">${ICON_DOWN}</i></a></div>
+        </div>
+        <div class="nv-sos" data-nv="up" style="--d:250ms">
+          <span class="nv-sos__label"><i aria-hidden="true"></i>${tr('Ligne d’urgence', 'Emergency line')}</span>
+          <button type="button" class="nv-sos__button" data-urgent-open aria-haspopup="dialog">
+            <span class="nv-sos__rings" aria-hidden="true"><i></i><i></i><i></i></span>
+            <span class="nv-sos__core">${ICON_ALERT}<b>${tr('Intervention<br>d’urgence', 'Emergency<br>call-out')}</b></span>
+          </button>
+          <a class="nv-sos__call" href="tel:+224622051321">${ICON_PHONE}<span><small>${tr('Appeler maintenant', 'Call now')}</small>+224 622 05 13 21</span></a>
+          <p>${tr('Activité bloquée, réseau coupé, serveur en panne, virus : déclenchez une alerte, MIRS reçoit votre demande avec toutes les informations utiles.', 'Business stopped, network down, server failure, virus: raise an alert and MIRS receives your request with all the useful details.')}</p>
+        </div>
+      </div>
+    </section>
+
+    ${marquee([tr('PRÉVENTION', 'PREVENTION'), tr('INTERVENTION', 'CALL-OUT'), tr('PARC', 'ASSETS'), tr('SUIVI', 'FOLLOW-UP'), tr('URGENCE', 'EMERGENCY')], 'nv-marquee--solo')}
+
+    <section class="nv-section nv-wrap">
+      <div class="nv-head"><div>${eyebrow(tr('CE QUE NOUS PRENONS EN CHARGE', 'WHAT WE COVER'), '01')}${sectionTitle(data.featureTitle)}</div><p data-nv="up">${data.featureText}</p></div>
+      <div class="nv-capabilities">${data.capabilities.map((capability, index) => `<article class="nv-capability" data-spot data-nv="up" style="--d:${index * 80}ms"><div class="nv-capability__top"><span>0${index + 1}</span><i aria-hidden="true">${ICON_ARROW}</i></div><div class="nv-capability__glyph" aria-hidden="true"><i></i><i></i><i></i></div><h3>${capability[0]}</h3><p>${capability[1]}</p></article>`).join('')}</div>
+    </section>
+
+    <section class="nv-section nv-wrap nv-reflex">
+      <div class="nv-reflex__intro">${eyebrow(tr('AVANT D’APPELER', 'BEFORE YOU CALL'), '02')}${sectionTitle(tr('Les bons <em>réflexes.</em>', 'The right <em>reflexes.</em>'))}<p data-nv="up">${tr('Cochez ce qui a été fait : ces informations accélèrent le diagnostic et sont ajoutées à votre alerte.', 'Tick what has been done: this information speeds up diagnosis and is added to your alert.')}</p></div>
+      <ul class="nv-reflex__list" data-reflex>${reflexes.map((item, index) => `<li data-nv="up" style="--d:${index * 60}ms"><label><input type="checkbox" value="${escapeHtml(item)}" data-reflex-item><span class="nv-reflex__box" aria-hidden="true">${ICON_CHECK}</span><span>${item}</span></label></li>`).join('')}</ul>
+    </section>
+
+    <section class="nv-section nv-wrap nv-maint-forms">
+      <form class="nv-form nv-form--card" id="demande" data-ticket-form data-spot>
+        <div class="nv-form__head">${eyebrow(tr('DEMANDE D’INTERVENTION', 'SERVICE REQUEST'), '03')}<h2>${tr('Une panne, un réglage, une <em>question.</em>', 'A fault, a setting, a <em>question.</em>')}</h2></div>
+        <label class="nv-field nv-field--select"><select name="equipment"><option>${tr('Poste de travail', 'Workstation')}</option><option>${tr('Réseau / Wi-Fi', 'Network / Wi-Fi')}</option><option>${tr('Serveur', 'Server')}</option><option>${tr('Imprimante', 'Printer')}</option><option>${tr('Logiciel / messagerie', 'Software / email')}</option><option>${tr('Autre', 'Other')}</option></select><span>${tr('Équipement', 'Equipment')}</span></label>
+        <label class="nv-field nv-field--select"><select name="when"><option>${tr('Dès que possible', 'As soon as possible')}</option><option>${tr('Cette semaine', 'This week')}</option><option>${tr('À planifier', 'To be scheduled')}</option></select><span>${tr('Délai souhaité', 'Preferred timing')}</span></label>
+        <label class="nv-field"><input required name="name" autocomplete="name" placeholder=" "><span>${tr('Nom', 'Name')}</span></label>
+        <label class="nv-field"><input required name="phone" type="tel" autocomplete="tel" placeholder=" "><span>${tr('Téléphone', 'Phone')}</span></label>
+        <label class="nv-field nv-field--wide"><input name="company" autocomplete="organization" placeholder=" "><span>${tr('Organisation et adresse', 'Organization and address')}</span></label>
+        <label class="nv-field nv-field--wide"><textarea required name="message" rows="4" placeholder=" "></textarea><span>${tr('Décrivez le problème', 'Describe the issue')}</span></label>
+        <div class="nv-form__submit"><button type="submit" class="nv-btn nv-btn--primary nv-btn--lg" data-magnetic>${roll(tr('Envoyer la demande', 'Send the request'))}<i aria-hidden="true">${ICON_ARROW}</i></button><p data-form-status role="status" aria-live="polite">${tr('Envoyée sur WhatsApp avec une référence de suivi.', 'Sent on WhatsApp with a tracking reference.')}</p></div>
+      </form>
+
+      <form class="nv-form nv-form--card nv-contract" id="contrat" data-contract-form data-spot>
+        <div class="nv-form__head">${eyebrow(tr('CONTRAT DE MAINTENANCE', 'MAINTENANCE CONTRACT'), '04')}<h2>${tr('Composez votre <em>contrat.</em>', 'Build your <em>contract.</em>')}</h2></div>
+        <label class="nv-range nv-field--wide"><span>${tr('Postes de travail', 'Workstations')}</span><output data-range-out="workstations">10</output><input type="range" name="workstations" min="1" max="200" value="10" data-range></label>
+        <label class="nv-range"><span>${tr('Serveurs', 'Servers')}</span><output data-range-out="servers">1</output><input type="range" name="servers" min="0" max="20" value="1" data-range></label>
+        <label class="nv-range"><span>${tr('Imprimantes', 'Printers')}</span><output data-range-out="printers">2</output><input type="range" name="printers" min="0" max="50" value="2" data-range></label>
+        <fieldset class="nv-choice nv-field--wide"><legend>${tr('Visites préventives', 'Preventive visits')}</legend>${[tr('Mensuelles', 'Monthly'), tr('Trimestrielles', 'Quarterly'), tr('Semestrielles', 'Twice a year')].map((label, index) => `<label><input type="radio" name="frequency" value="${label}" ${index === 0 ? 'checked' : ''}><span>${label}</span></label>`).join('')}</fieldset>
+        <fieldset class="nv-choice nv-field--wide"><legend>${tr('Couverture', 'Coverage')}</legend>${[tr('Heures ouvrées', 'Business hours'), tr('Horaires étendus', 'Extended hours')].map((label, index) => `<label><input type="radio" name="coverage" value="${label}" ${index === 0 ? 'checked' : ''}><span>${label}</span></label>`).join('')}</fieldset>
+        <label class="nv-field"><input required name="name" autocomplete="name" placeholder=" "><span>${tr('Nom', 'Name')}</span></label>
+        <label class="nv-field"><input required name="phone" type="tel" autocomplete="tel" placeholder=" "><span>${tr('Téléphone', 'Phone')}</span></label>
+        <label class="nv-field nv-field--wide"><input name="company" autocomplete="organization" placeholder=" "><span>${tr('Organisation', 'Organization')}</span></label>
+        <div class="nv-form__submit"><button type="submit" class="nv-btn nv-btn--primary nv-btn--lg" data-magnetic>${roll(tr('Demander un devis', 'Request a quote'))}<i aria-hidden="true">${ICON_ARROW}</i></button><p data-form-status role="status" aria-live="polite">${tr('Devis personnalisé, sans engagement.', 'Personalised quote, no commitment.')}</p></div>
+      </form>
+    </section>
+
+    <section class="nv-section nv-wrap nv-process" data-progress>
+      <div class="nv-head"><div>${eyebrow(tr('UNE MÉTHODE STRUCTURÉE', 'A STRUCTURED METHOD'), '05')}${sectionTitle(tr('La continuité en<br>cinq <em>temps.</em>', 'Continuity in<br>five <em>stages.</em>'))}</div></div>
+      <div class="nv-process__line" aria-hidden="true"><span></span></div>
+      <ol class="nv-process__rail">${data.steps.map((step, index) => `<li data-nv="up" style="--d:${index * 90}ms"><span class="nv-process__dot" aria-hidden="true"></span><small>0${index + 1}</small><b>${step[0]}</b><p>${step[1]}</p></li>`).join('')}</ol>
+    </section>
+
+    <section class="nv-section nv-references">
+      <div class="nv-wrap nv-head"><div>${eyebrow(tr('ILS NOUS FONT CONFIANCE', 'THEY TRUST US'), '06')}${sectionTitle(tr('La confiance se construit<br>dans <em>la durée.</em>', 'Trust is built through<br><em>lasting</em> results.'))}</div></div>
+      ${logoWall(27)}
+    </section>
+
+    <button type="button" class="nv-sos-float" data-urgent-open aria-haspopup="dialog"><span aria-hidden="true">${ICON_ALERT}</span>${tr('Urgence', 'Emergency')}</button>
+
+    <dialog class="nv-dialog nv-dialog--urgent" data-urgent-dialog aria-labelledby="nv-urgent-title">
+      <form class="nv-dialog__form" data-urgent-form>
+        <div class="nv-dialog__head"><div><span class="nv-urgent-tag"><i aria-hidden="true"></i>${tr('ALERTE PRIORITAIRE', 'PRIORITY ALERT')}</span><h2 id="nv-urgent-title">${tr('Intervention <em>d’urgence.</em>', 'Emergency <em>call-out.</em>')}</h2></div><button type="button" class="nv-dialog__close" data-dialog-close aria-label="${tr('Fermer', 'Close')}">×</button></div>
+        <fieldset class="nv-choice nv-choice--grid"><legend>${tr('Que se passe-t-il ?', 'What is happening?')}</legend>${[
+          tr('Internet / réseau coupé', 'Internet / network down'), tr('Serveur en panne', 'Server failure'), tr('Poste bloqué', 'Workstation blocked'), tr('Virus / piratage', 'Virus / breach'), tr('Coupure électrique / onduleur', 'Power / UPS failure'), tr('Autre urgence', 'Other emergency'),
+        ].map((label, index) => `<label><input type="radio" name="issue" value="${label}" ${index === 0 ? 'checked' : ''}><span>${label}</span></label>`).join('')}</fieldset>
+        <fieldset class="nv-choice"><legend>${tr('Impact', 'Impact')}</legend>${[tr('Toute l’activité est arrêtée', 'Whole business stopped'), tr('Une équipe est bloquée', 'A team is blocked'), tr('Un poste est touché', 'One machine affected')].map((label, index) => `<label><input type="radio" name="impact" value="${label}" ${index === 0 ? 'checked' : ''}><span>${label}</span></label>`).join('')}</fieldset>
+        <div class="nv-dialog__grid">
+          <label class="nv-field"><input required name="name" autocomplete="name" placeholder=" "><span>${tr('Votre nom', 'Your name')}</span></label>
+          <label class="nv-field"><input required name="phone" type="tel" autocomplete="tel" placeholder=" "><span>${tr('Téléphone joignable', 'Reachable phone')}</span></label>
+          <label class="nv-field nv-field--wide"><input required name="location" autocomplete="street-address" placeholder=" "><span>${tr('Organisation et adresse / quartier', 'Organization and address / district')}</span></label>
+          <label class="nv-field nv-field--wide"><textarea name="message" rows="3" placeholder=" "></textarea><span>${tr('Détails utiles (facultatif)', 'Useful details (optional)')}</span></label>
+        </div>
+        <div class="nv-dialog__foot"><a class="nv-btn nv-btn--ghost" href="tel:+224622051321">${roll(tr('Appeler', 'Call'))}<i aria-hidden="true">${ICON_PHONE}</i></a><button type="submit" class="nv-btn nv-btn--urgent nv-btn--lg" data-magnetic>${roll(tr('Envoyer l’alerte', 'Send the alert'))}<i aria-hidden="true">${ICON_ALERT}</i></button></div>
+      </form>
+      <div class="nv-dialog__done" data-urgent-done hidden></div>
+    </dialog>
+  </main>`, '/maintenance');
+}
+
+/* ---------------- IT store (e-commerce, quote-based) ---------------- */
+
+function storeCard(product, index = 0) {
+  const name = local(product.name);
+  const category = storeCategories.find((item) => item.key === product.category);
+  return `<article class="nv-sku" data-sku data-category="${product.category}" data-name="${escapeHtml(searchKey(`${name} ${local(product.detail)} ${product.option?.values.join(' ') || ''}`))}" data-spot data-nv="up" style="--d:${(index % 3) * 70}ms">
+    <a href="${pageHref(`/informatique/boutique/${product.id}`)}" data-link class="nv-sku__media" data-cursor="${tr('Voir', 'View')}">${deviceArt(product.icon)}<span class="nv-sku__cat">${local(category?.label)}</span></a>
+    <div class="nv-sku__body">
+      <h3><a href="${pageHref(`/informatique/boutique/${product.id}`)}" data-link>${name}</a></h3>
+      <p>${local(product.detail)}</p>
+      <div class="nv-sku__price"><span>${tr('Prix', 'Price')}</span><b>${tr('Sur devis', 'On quotation')}</b></div>
+      <div class="nv-sku__actions"><button type="button" class="nv-btn nv-btn--primary nv-btn--sm" data-add-product="${product.id}" data-magnetic>${roll(tr('Ajouter', 'Add'))}<i aria-hidden="true">${ICON_CART}</i></button>${link(`/informatique/boutique/${product.id}`, tr('Détails', 'Details'))}</div>
+    </div>
+  </article>`;
+}
+
+function techStore() {
+  const items = storeProducts.filter((product) => isProductVisible(product.id));
+  const categories = storeCategories.filter((category) => items.some((product) => product.category === category.key));
+  return shell(`<main class="nv-store">
+    <section class="nv-shop-hero nv-store-hero" data-hero>
+      <div class="nv-hero__aurora" aria-hidden="true"><span></span><span></span><span></span></div>
+      <div class="nv-hero__grid" aria-hidden="true"></div>
+      <div class="nv-shop-hero__layout nv-wrap">
+        <div>
+          <div class="nv-hero__meta" data-nv="fade"><span>MIRS / STORE</span><span>${tr('INFORMATIQUE', 'IT')}</span><span>${String(items.length).padStart(2, '0')} ${tr('PRODUITS', 'PRODUCTS')}</span></div>
+          ${sectionTitle(tr('L’équipement informatique, <em>installé.</em>', 'IT equipment, <em>installed.</em>'), 'nv-shop-hero__title', 'h1')}
+          <p data-nv="up" style="--d:200ms">${tr('Composez votre panier, passez commande : MIRS vous envoie un devis, confirme la disponibilité et peut installer le matériel sur site.', 'Build your cart and place your order: MIRS sends a quote, confirms availability and can install the equipment on site.')}</p>
+          <ul class="nv-store-perks" data-nv="up" style="--d:300ms"><li><i aria-hidden="true">${ICON_CHECK}</i>${tr('Devis sous confirmation MIRS', 'Quote confirmed by MIRS')}</li><li><i aria-hidden="true">${ICON_CHECK}</i>${tr('Configuration & installation', 'Configuration & installation')}</li><li><i aria-hidden="true">${ICON_CHECK}</i>${tr('Retrait ou livraison à convenir', 'Pick-up or delivery to be arranged')}</li></ul>
+        </div>
+        <div class="nv-store-hero__stack" data-tilt aria-hidden="true">${['laptop', 'router', 'server'].map((icon, index) => `<div class="nv-store-hero__card nv-store-hero__card--${index + 1}">${deviceArt(icon)}</div>`).join('')}</div>
+      </div>
+    </section>
+
+    <section class="nv-section nv-wrap nv-store-body" id="catalogue">
+      <div class="nv-store-toolbar" data-nv="up">
+        <label class="nv-search"><svg viewBox="0 0 24 24" aria-hidden="true"><circle cx="11" cy="11" r="6.5"/><path d="M16 16l4.5 4.5"/></svg><input type="search" placeholder="${tr('Rechercher un produit…', 'Search a product…')}" data-store-search aria-label="${tr('Rechercher un produit', 'Search a product')}"></label>
+        <div class="nv-filters" role="toolbar" aria-label="${tr('Catégories', 'Categories')}"><span class="nv-filters__pill" aria-hidden="true" data-filter-pill></span><button type="button" data-filter="all" data-filter-scope="sku" class="is-active">${tr('Tout', 'All')}</button>${categories.map((category) => `<button type="button" data-filter="${category.key}" data-filter-scope="sku">${local(category.label)}</button>`).join('')}</div>
+      </div>
+      <p class="nv-store-count" data-store-count>${items.length} ${tr('produits', 'products')}</p>
+      <div class="nv-skus">${items.map(storeCard).join('')}</div>
+      <p class="nv-store-empty" data-store-empty hidden>${tr('Aucun produit ne correspond. Décrivez votre besoin : MIRS trouve l’équipement adapté.', 'No product matches. Describe your need: MIRS will find the right equipment.')} ${link('/contact', 'Contact')}</p>
+    </section>
+
+    <section class="nv-section nv-wrap nv-howto">
+      <div class="nv-head"><div>${eyebrow(tr('COMMENT COMMANDER', 'HOW TO ORDER'))}${sectionTitle(tr('Trois étapes jusqu’à<br>votre <em>équipement.</em>', 'Three steps to<br>your <em>equipment.</em>'))}</div></div>
+      <ol class="nv-howto__list">${[
+        [tr('Panier', 'Cart'), tr('Choisissez produits, options et quantités.', 'Choose products, options and quantities.')],
+        [tr('Commande', 'Order'), tr('Renseignez vos coordonnées et le mode de remise.', 'Fill in your details and delivery mode.')],
+        [tr('Devis & livraison', 'Quote & delivery'), tr('MIRS confirme le montant, la disponibilité et la date.', 'MIRS confirms the amount, availability and date.')],
+      ].map((step, index) => `<li data-spot data-nv="up" style="--d:${index * 80}ms"><span>0${index + 1}</span><b>${step[0]}</b><p>${step[1]}</p></li>`).join('')}</ol>
+    </section>
+
+    ${closingPortal(tr('Un besoin plus large ? <em>Parlons-en.</em>', 'A bigger need? <em>Let’s talk.</em>'), tr('Équipement d’un site complet, renouvellement de parc ou projet réseau : MIRS chiffre l’ensemble.', 'Equipping a full site, refreshing assets or a network project: MIRS prices the whole project.'), tr('Demander un devis global', 'Request a global quote'))}
+  </main>`, '/informatique/boutique');
+}
+
+function productDetail(id) {
+  const product = storeProducts.find((item) => item.id === id);
+  if (!product || !isProductVisible(product.id)) return notFound();
+  const name = local(product.name);
+  const category = storeCategories.find((item) => item.key === product.category);
+  const related = storeProducts.filter((item) => item.id !== id && item.category === product.category && isProductVisible(item.id)).concat(storeProducts.filter((item) => item.category !== product.category && isProductVisible(item.id))).slice(0, 3);
+  return shell(`<main class="nv-pdp">
+    <section class="nv-section nv-wrap nv-pdp__top">
+      <nav class="nv-crumbs" aria-label="${tr('Fil d’Ariane', 'Breadcrumb')}" data-nv="fade"><a href="${pageHref('/informatique/boutique')}" data-link>${tr('Boutique', 'Store')}</a><span>/</span><span>${local(category?.label)}</span><span>/</span><span>${name}</span></nav>
+      <div class="nv-pdp__layout">
+        <div class="nv-pdp__media" data-tilt data-spot>${deviceArt(product.icon, 'nv-device--xl')}<span class="nv-sku__cat">${local(category?.label)}</span></div>
+        <form class="nv-pdp__info" data-product-form="${product.id}">
+          ${eyebrow(`MIRS STORE / ${local(category?.label).toUpperCase()}`)}
+          ${sectionTitle(name, 'nv-pdp__title', 'h1')}
+          <p data-nv="up">${local(product.detail)}</p>
+          <div class="nv-sku__price nv-sku__price--lg" data-nv="up"><span>${tr('Prix', 'Price')}</span><b>${tr('Sur devis', 'On quotation')}</b><small>${tr('Montant confirmé par MIRS selon configuration et quantité.', 'Amount confirmed by MIRS according to configuration and quantity.')}</small></div>
+          ${product.option ? `<fieldset class="nv-choice nv-choice--options" data-nv="up"><legend>${local(product.option.label)}</legend>${product.option.values.map((value, index) => `<label><input type="radio" name="option" value="${escapeHtml(value)}" ${index === 0 ? 'checked' : ''}><span>${value}</span></label>`).join('')}</fieldset>` : ''}
+          <div class="nv-pdp__buy" data-nv="up">
+            <div class="nv-qty nv-qty--lg" role="group" aria-label="${tr('Quantité', 'Quantity')}"><button type="button" data-step="-1" aria-label="${tr('Diminuer', 'Decrease')}">${ICON_MINUS}</button><input type="number" name="qty" value="1" min="1" max="999" inputmode="numeric" aria-label="${tr('Quantité', 'Quantity')}"><button type="button" data-step="1" aria-label="${tr('Augmenter', 'Increase')}">${ICON_PLUS}</button></div>
+            <button type="submit" class="nv-btn nv-btn--primary nv-btn--lg" data-magnetic>${roll(tr('Ajouter au panier', 'Add to cart'))}<i aria-hidden="true">${ICON_CART}</i></button>
+            <button type="submit" class="nv-btn nv-btn--ghost nv-btn--lg" data-buy-now data-magnetic>${roll(tr('Commander', 'Order now'))}<i aria-hidden="true">${ICON_ARROW}</i></button>
+          </div>
+          <ul class="nv-store-perks" data-nv="up"><li><i aria-hidden="true">${ICON_CHECK}</i>${tr('Configuration avant remise', 'Configured before handover')}</li><li><i aria-hidden="true">${ICON_CHECK}</i>${tr('Installation sur site possible', 'On-site installation available')}</li><li><i aria-hidden="true">${ICON_CHECK}</i>${tr('Conseil avant achat', 'Advice before purchase')}</li></ul>
+        </form>
+      </div>
+    </section>
+    <section class="nv-section nv-wrap nv-pdp__specs">
+      <div>${eyebrow(tr('CARACTÉRISTIQUES', 'SPECIFICATIONS'), '01')}${sectionTitle(tr('Les points <em>clés.</em>', 'Key <em>points.</em>'))}</div>
+      <dl class="nv-specs">${product.specs.map(([label, value]) => `<div data-nv="up"><dt>${local(label)}</dt><dd>${local(value)}</dd></div>`).join('')}${product.option ? `<div data-nv="up"><dt>${local(product.option.label)}</dt><dd>${product.option.values.join(' · ')}</dd></div>` : ''}</dl>
+    </section>
+    <section class="nv-section nv-wrap"><div class="nv-head"><div>${eyebrow(tr('À ASSOCIER', 'GOES WELL WITH'))}${sectionTitle(tr('Complétez votre <em>commande.</em>', 'Complete your <em>order.</em>'))}</div>${link('/informatique/boutique', tr('Toute la boutique', 'Full store'))}</div><div class="nv-skus">${related.map(storeCard).join('')}</div></section>
+  </main>`, `/informatique/boutique/${id}`);
+}
+
+/* ---------------- Checkout ---------------- */
+
+function checkout() {
+  const lines = state.cart;
+  return shell(`<main class="nv-checkout">
+    <section class="nv-page-hero nv-checkout-hero" data-hero>
+      <div class="nv-hero__aurora" aria-hidden="true"><span></span><span></span><span></span></div>
+      <div class="nv-hero__grid" aria-hidden="true"></div>
+      <div class="nv-wrap nv-page-hero__layout">
+        <ol class="nv-steps" data-nv="fade"><li class="is-done"><span>01</span>${tr('Panier', 'Cart')}</li><li class="is-current"><span>02</span>${tr('Coordonnées', 'Details')}</li><li><span>03</span>${tr('Devis & confirmation', 'Quote & confirmation')}</li></ol>
+        ${sectionTitle(tr('Finaliser ma <em>commande.</em>', 'Complete my <em>order.</em>'), 'nv-page-hero__title', 'h1')}
+      </div>
+    </section>
+    <section class="nv-section nv-wrap nv-checkout__layout" data-checkout>
+      ${lines.length ? `<form class="nv-form nv-form--card nv-checkout__form" data-checkout-form data-spot>
+        <div class="nv-form__head">${eyebrow(tr('VOS COORDONNÉES', 'YOUR DETAILS'), '01')}</div>
+        <label class="nv-field"><input required name="name" autocomplete="name" placeholder=" "><span>${tr('Nom et prénom', 'Full name')}</span></label>
+        <label class="nv-field"><input name="company" autocomplete="organization" placeholder=" "><span>${tr('Organisation (facultatif)', 'Organization (optional)')}</span></label>
+        <label class="nv-field"><input required name="phone" type="tel" autocomplete="tel" placeholder=" "><span>${tr('Téléphone / WhatsApp', 'Phone / WhatsApp')}</span></label>
+        <label class="nv-field"><input name="email" type="email" autocomplete="email" placeholder=" "><span>Email</span></label>
+        <div class="nv-form__head nv-field--wide">${eyebrow(tr('REMISE DE LA COMMANDE', 'ORDER HANDOVER'), '02')}</div>
+        <fieldset class="nv-choice nv-field--wide">${[[tr('Retrait chez MIRS', 'Pick-up at MIRS'), 'pickup'], [tr('Livraison à convenir', 'Delivery to be arranged'), 'delivery'], [tr('Livraison + installation', 'Delivery + installation'), 'install']].map(([label, value], index) => `<label><input type="radio" name="delivery" value="${label}" data-delivery="${value}" ${index === 0 ? 'checked' : ''}><span>${label}</span></label>`).join('')}</fieldset>
+        <label class="nv-field nv-field--wide" data-address hidden><input name="address" autocomplete="street-address" placeholder=" "><span>${tr('Adresse / quartier de livraison', 'Delivery address / district')}</span></label>
+        <label class="nv-field nv-field--wide"><textarea name="note" rows="3" placeholder=" "></textarea><span>${tr('Précisions (délai, usage, budget…)', 'Details (timing, use, budget…)')}</span></label>
+        <label class="nv-consent nv-field--wide"><input type="checkbox" required name="consent"><span>${tr('Je comprends que les prix sont communiqués sur devis et que la commande est confirmée par MIRS.', 'I understand prices are provided on quotation and the order is confirmed by MIRS.')}</span></label>
+        <div class="nv-form__submit"><button type="submit" class="nv-btn nv-btn--primary nv-btn--lg" data-magnetic>${roll(tr('Envoyer ma commande', 'Send my order'))}<i aria-hidden="true">${ICON_ARROW}</i></button><p data-form-status role="status" aria-live="polite">${tr('La commande est transmise à MIRS sur WhatsApp avec sa référence.', 'The order is sent to MIRS on WhatsApp with its reference.')}</p></div>
+      </form>
+      <aside class="nv-summary" data-spot>
+        <div class="nv-summary__head"><span>${tr('RÉCAPITULATIF', 'SUMMARY')}</span><b>${cartCount()} ${tr('article(s)', 'item(s)')}</b></div>
+        <ul class="nv-lines" data-checkout-list>${lines.map((item, index) => cartLine(item, index, false)).join('')}</ul>
+        <div class="nv-summary__total"><span>${tr('Total', 'Total')}</span><b>${tr('Sur devis', 'On quotation')}</b></div>
+        <p>${tr('Aucun paiement en ligne : MIRS vous envoie le devis, puis convient avec vous du règlement et de la remise.', 'No online payment: MIRS sends the quote, then agrees payment and handover with you.')}</p>
+        ${link('/informatique/boutique', tr('Continuer mes achats', 'Continue shopping'))}
+      </aside>` : `<div class="nv-empty-cart" data-spot>${deviceArt('laptop', 'nv-device--xl')}<h2>${tr('Votre panier est vide.', 'Your cart is empty.')}</h2><p>${tr('Ajoutez des produits depuis la boutique ou une formation depuis l’Academy.', 'Add products from the store or a course from the Academy.')}</p><div class="nv-hero__actions">${button('/informatique/boutique', tr('Voir la boutique', 'Browse the store'), 'primary')}${button('/formation', 'MIRS Academy', 'ghost')}</div></div>`}
+    </section>
+  </main>`, '/checkout');
+}
+
+function orderConfirmation(record) {
+  return `<div class="nv-confirm" data-spot>
+    <span class="nv-confirm__icon" aria-hidden="true">${ICON_CHECK}</span>
+    <p class="nv-eyebrow"><b>03</b>${tr('COMMANDE TRANSMISE', 'ORDER SENT')}</p>
+    <h2>${tr('Merci, votre commande est <em>enregistrée.</em>', 'Thank you, your order is <em>recorded.</em>')}</h2>
+    <p>${tr('Référence', 'Reference')} <b>${record.id}</b>. ${tr('MIRS revient vers vous avec le devis, la disponibilité et la date de remise.', 'MIRS will come back with the quote, availability and handover date.')}</p>
+    <ul class="nv-lines">${(record.lines || []).map((line) => `<li class="nv-line"><span class="nv-line__tag">×${line.qty}</span><div class="nv-line__copy"><b>${escapeHtml(line.name)}</b>${line.option ? `<small>${escapeHtml(line.option)}</small>` : ''}</div></li>`).join('')}</ul>
+    <div class="nv-hero__actions"><button type="button" class="nv-btn nv-btn--primary" data-whatsapp-again="${record.id}" data-magnetic>${roll(tr('Rouvrir WhatsApp', 'Reopen WhatsApp'))}<i aria-hidden="true">${ICON_ARROW}</i></button>${button('/informatique/boutique', tr('Retour à la boutique', 'Back to the store'), 'ghost')}</div>
+  </div>`;
 }
 
 function projects() {
@@ -988,27 +1722,6 @@ function contact() {
   </main>`, '/contact');
 }
 
-function checkout() {
-  const entries = state.cart.length
-    ? state.cart.map((item, index) => `<li data-spot><span>${String(index + 1).padStart(2, '0')}</span><b>${item}</b><button type="button" data-remove="${index}">${tr('Retirer', 'Remove')}</button></li>`).join('')
-    : `<li class="nv-checkout__empty">${tr('Votre liste est encore vide. Explorez les univers pour composer un premier brief.', 'Your list is still empty. Explore the capabilities to compose a first brief.')}</li>`;
-  return shell(`<main class="nv-checkout">
-    <section class="nv-page-hero" data-hero>
-      <div class="nv-hero__aurora" aria-hidden="true"><span></span><span></span><span></span></div>
-      <div class="nv-hero__grid" aria-hidden="true"></div>
-      <div class="nv-wrap nv-page-hero__layout">
-        <div class="nv-hero__meta" data-nv="fade"><span>${tr('VOTRE LISTE', 'YOUR LIST')}</span><span>${tr('PREMIER BRIEF', 'FIRST BRIEF')}</span><span>${String(state.cart.length).padStart(2, '0')} ${tr('ÉLÉMENTS', 'ITEMS')}</span></div>
-        ${sectionTitle(tr('Ce qui mérite une <em>conversation.</em>', 'What deserves a <em>conversation.</em>'), 'nv-page-hero__title', 'h1')}
-        <p data-nv="up" style="--d:200ms">${tr('La liste ne remplace pas un devis : elle permet de commencer avec les bons repères.', 'The list does not replace a quotation: it helps start with the right reference points.')}</p>
-      </div>
-    </section>
-    <section class="nv-section nv-wrap nv-checkout__layout">
-      <div class="nv-checkout__list"><h2>${state.cart.length ? tr('Votre sélection', 'Your selection') : tr('Pas encore de sélection', 'No selection yet')}</h2><ol data-checkout-list>${entries}</ol></div>
-      <aside class="nv-checkout__note" data-spot><span>${tr('PROCHAINE ÉTAPE', 'NEXT STEP')}</span><h2>${tr('Mettre cette liste dans son contexte.', 'Put this list into context.')}</h2><p>${tr('Expliquez le besoin ; MIRS revient vers vous avec une première lecture.', 'Explain the need; MIRS comes back with an initial reading.')}</p>${button('/contact', tr('Préparer le brief', 'Prepare the brief'), 'primary')}</aside>
-    </section>
-  </main>`, '/checkout');
-}
-
 function notFound() {
   return shell(`<main class="nv-404" data-hero>
     <canvas class="nv-hero__field" data-field aria-hidden="true"></canvas>
@@ -1023,21 +1736,82 @@ function notFound() {
   </main>`, '/404');
 }
 
-function updateCartPresentation() {
-  document.querySelectorAll('[data-cart-count]').forEach((node) => { node.textContent = state.cart.length; });
-  const drawer = document.querySelector('[data-cart-drawer]');
-  if (drawer) drawer.innerHTML = cartPanel();
-  const list = document.querySelector('[data-checkout-list]');
-  if (list && pageRoute() === '/checkout') renderRoute(location.pathname, { preserveScroll: true });
-}
-
 function persistCart() {
-  localStorage.setItem('mirs-future-cart', JSON.stringify(state.cart));
+  try {
+    localStorage.setItem('mirs-future-cart', JSON.stringify(state.cart));
+  } catch {
+    // The cart still works for this visit when storage is unavailable.
+  }
 }
 
 function setCartOpen(open) {
   document.body.classList.toggle('cart-open', open);
 }
+
+let toastTimer = 0;
+function showToast(message) {
+  const toast = document.querySelector('[data-toast]');
+  if (!toast) return;
+  toast.innerHTML = `<i aria-hidden="true">${ICON_CHECK}</i><span>${message}</span>`;
+  toast.classList.add('is-on');
+  clearTimeout(toastTimer);
+  toastTimer = setTimeout(() => toast.classList.remove('is-on'), 2600);
+}
+
+function updateCartPresentation() {
+  document.querySelectorAll('[data-cart-count]').forEach((node) => {
+    node.textContent = cartCount();
+    node.classList.remove('is-bump');
+    requestAnimationFrame(() => node.classList.add('is-bump'));
+  });
+  const drawer = document.querySelector('[data-cart-drawer]');
+  if (drawer) drawer.innerHTML = cartPanel();
+  if (pageRoute() === '/checkout' && !document.querySelector('[data-checkout-done]')) renderRoute(location.pathname, { preserveScroll: true });
+}
+
+function addToCart(item) {
+  const existing = state.cart.find((entry) => entry.key === item.key);
+  if (existing) existing.qty = Math.min(999, existing.qty + item.qty);
+  else state.cart.push(item);
+  persistCart();
+  updateCartPresentation();
+  showToast(`${escapeHtml(item.name)} — ${tr('ajouté au panier', 'added to cart')}`);
+}
+
+function productCartItem(id, option, qty = 1) {
+  const product = storeProducts.find((item) => item.id === id);
+  if (!product) return null;
+  const chosen = option || product.option?.values[0] || '';
+  return { key: `store:${id}:${chosen}`, id, name: local(product.name), option: chosen, qty: Math.max(1, Math.min(999, Number(qty) || 1)), kind: 'store', icon: product.icon };
+}
+
+function updateEnrollSessions(dialog, preferred = '') {
+  const slug = dialog.querySelector('[data-enroll-course]')?.value;
+  const course = academyCourses.find((item) => item.slug === slug);
+  const select = dialog.querySelector('[data-enroll-session]');
+  if (!course || !select) return;
+  const sessions = courseSessions(course);
+  select.innerHTML = `${sessions.map((session) => `<option value="${session.date}" ${session.date === preferred ? 'selected' : ''}>${formatDate(session.date)} · ${session.place || 'Conakry'}</option>`).join('')}<option value="" ${!sessions.length ? 'selected' : ''}>${tr('Prochaine session disponible', 'Next available session')}</option>`;
+}
+
+function openEnroll(slug, session = '') {
+  const dialog = document.querySelector('[data-enroll-dialog]');
+  if (!dialog) return;
+  const form = dialog.querySelector('[data-enroll-form]');
+  const done = dialog.querySelector('[data-enroll-done]');
+  form.hidden = false;
+  done.hidden = true;
+  const courseSelect = dialog.querySelector('[data-enroll-course]');
+  if (courseSelect && slug) courseSelect.value = slug;
+  updateEnrollSessions(dialog, session);
+  dialog.showModal();
+}
+
+function dialogSuccess(container, title, text, record) {
+  container.innerHTML = `<div class="nv-confirm nv-confirm--dialog"><span class="nv-confirm__icon" aria-hidden="true">${ICON_CHECK}</span><h2>${title}</h2><p>${text}</p><p class="nv-confirm__ref">${tr('Référence', 'Reference')} <b>${record.id}</b></p><div class="nv-hero__actions"><button type="button" class="nv-btn nv-btn--primary" data-whatsapp-again="${record.id}">${roll(tr('Rouvrir WhatsApp', 'Reopen WhatsApp'))}<i aria-hidden="true">${ICON_ARROW}</i></button><button type="button" class="nv-btn nv-btn--ghost" data-dialog-close>${roll(tr('Fermer', 'Close'))}<i aria-hidden="true">×</i></button></div></div>`;
+  container.hidden = false;
+}
+
 
 function closeVideo() {
   const dialog = document.querySelector('[data-video-modal]');
@@ -1680,21 +2454,45 @@ function runLoader() {
   });
 }
 
+const formValue = (form, name) => String(new FormData(form).get(name) || '').trim();
+
+function applySkuFilters() {
+  const active = document.querySelector('[data-filter-scope="sku"].is-active')?.dataset.filter || 'all';
+  const query = searchKey(document.querySelector('[data-store-search]')?.value);
+  let shown = 0;
+  document.querySelectorAll('[data-sku]').forEach((card) => {
+    const visible = (active === 'all' || card.dataset.category === active) && (!query || card.dataset.name.includes(query));
+    card.hidden = !visible;
+    if (visible) shown += 1;
+  });
+  const count = document.querySelector('[data-store-count]');
+  if (count) count.textContent = `${shown} ${tr('produits', 'products')}`;
+  const empty = document.querySelector('[data-store-empty]');
+  if (empty) empty.hidden = shown > 0;
+}
+
+function rerenderAdmin() {
+  renderRoute(location.pathname, { preserveScroll: true });
+}
+
 function bind() {
   routeAbort?.abort();
   routeAbort = new AbortController();
   const { signal } = routeAbort;
   const root = document.getElementById('app');
+
   root.addEventListener('click', (event) => {
-    const routeLink = event.target.closest('[data-link]');
+    const target = event.target;
+    const routeLink = target.closest('[data-link]');
     if (routeLink && event.button === 0 && !event.metaKey && !event.ctrlKey && !event.shiftKey) {
       event.preventDefault();
       setCartOpen(false);
-      document.body.classList.remove('menu-open');
+      document.body.classList.remove('menu-open', 'admin-menu-open');
+      target.closest('dialog')?.close();
       navigate(routeLink.getAttribute('href'));
       return;
     }
-    const anchorLink = event.target.closest('[data-anchor]');
+    const anchorLink = target.closest('[data-anchor]');
     if (anchorLink) {
       event.preventDefault();
       const id = anchorLink.dataset.anchor;
@@ -1703,204 +2501,409 @@ function bind() {
       else document.getElementById(id)?.scrollIntoView({ behavior: 'smooth', block: 'start' });
       return;
     }
-    if (event.target.closest('[data-totop]')) {
+    const hashLink = target.closest('a[href^="#"]');
+    if (hashLink && hashLink.getAttribute('href').length > 1) {
+      event.preventDefault();
+      document.getElementById(hashLink.getAttribute('href').slice(1))?.scrollIntoView({ behavior: 'smooth', block: 'start' });
+      return;
+    }
+    if (target.closest('[data-totop]')) {
       scrollTo({ top: 0, behavior: prefersReducedMotion() ? 'auto' : 'smooth' });
       return;
     }
-    if (event.target.closest('button[data-theme]')) {
+    if (target.closest('button[data-theme]')) {
       state.theme = state.theme === 'dark' ? 'light' : 'dark';
-      localStorage.setItem('mirs-future-theme', state.theme);
+      try { localStorage.setItem('mirs-future-theme', state.theme); } catch { /* theme still applies */ }
       document.documentElement.dataset.theme = state.theme;
       return;
     }
-    if (event.target.closest('[data-admin-logout]')) {
-      adminLogout();
-      state.adminView = 'home';
-      renderRoute(location.pathname, { preserveScroll: true });
-      return;
-    }
-    const menuButton = event.target.closest('[data-menu]');
+    const menuButton = target.closest('[data-menu]');
     if (menuButton) {
       const open = document.body.classList.toggle('menu-open');
       menuButton.setAttribute('aria-expanded', String(open));
       document.querySelector('[data-header]')?.classList.remove('is-hidden');
       return;
     }
-    if (event.target.closest('[data-cart]')) {
+    if (target.closest('[data-cart]')) {
       setCartOpen(true);
       return;
     }
-    if (event.target.closest('[data-close-cart]')) {
+    if (target.closest('[data-close-cart]')) {
       setCartOpen(false);
       return;
     }
-    const add = event.target.closest('[data-add]');
-    if (add) {
-      state.cart.push(add.dataset.add);
-      persistCart();
-      updateCartPresentation();
-      setCartOpen(true);
+    if (target.closest('[data-dialog-close]')) {
+      target.closest('dialog')?.close();
       return;
     }
-    const remove = event.target.closest('[data-remove]');
+    const add = target.closest('[data-add]');
+    if (add) {
+      const kind = add.dataset.addKind || (pageRoute().startsWith('/imprimerie') ? 'print' : 'brief');
+      addToCart({ key: `${kind}:${add.dataset.add}`, name: add.dataset.add, qty: 1, kind });
+      return;
+    }
+    const addProduct = target.closest('[data-add-product]');
+    if (addProduct) {
+      const item = productCartItem(addProduct.dataset.addProduct);
+      if (item) addToCart(item);
+      return;
+    }
+    const step = target.closest('[data-step]');
+    if (step) {
+      const input = step.parentElement.querySelector('input[name="qty"]');
+      if (input) input.value = String(Math.max(1, Math.min(999, (Number(input.value) || 1) + Number(step.dataset.step))));
+      return;
+    }
+    const qty = target.closest('[data-cart-qty]');
+    if (qty) {
+      const [index, delta] = qty.dataset.cartQty.split(':').map(Number);
+      const line = state.cart[index];
+      if (line) {
+        line.qty = Math.max(1, Math.min(999, line.qty + delta));
+        persistCart();
+        updateCartPresentation();
+      }
+      return;
+    }
+    const remove = target.closest('[data-remove]');
     if (remove) {
       state.cart.splice(Number(remove.dataset.remove), 1);
       persistCart();
       updateCartPresentation();
       return;
     }
-    const filter = event.target.closest('[data-filter]');
+    const filter = target.closest('[data-filter]');
     if (filter) {
       const value = filter.dataset.filter;
-      document.querySelectorAll('[data-filter]').forEach((buttonNode) => buttonNode.classList.toggle('is-active', buttonNode === filter));
-      document.querySelectorAll('[data-product-card]').forEach((card) => {
-        card.hidden = value !== 'all' && card.dataset.category !== value;
-      });
+      const scope = filter.dataset.filterScope || 'product';
+      filter.parentElement.querySelectorAll('[data-filter]').forEach((node) => node.classList.toggle('is-active', node === filter));
+      if (scope === 'sku') applySkuFilters();
+      else {
+        const selector = scope === 'course' ? '[data-course-card]' : '[data-product-card]';
+        document.querySelectorAll(selector).forEach((card) => { card.hidden = value !== 'all' && card.dataset.category !== value; });
+      }
       positionFilterPill();
       return;
     }
-    const adminViewButton = event.target.closest('[data-admin-view]');
+    const logosMore = target.closest('[data-logos-more]');
+    if (logosMore) {
+      logosMore.closest('.nv-wall-wrap')?.querySelectorAll('[data-logo-extra]').forEach((item) => { item.hidden = false; });
+      logosMore.remove();
+      return;
+    }
+    const enroll = target.closest('[data-enroll]');
+    if (enroll) {
+      openEnroll(enroll.dataset.enroll, enroll.dataset.session || '');
+      return;
+    }
+    if (target.closest('[data-urgent-open]')) {
+      const dialog = document.querySelector('[data-urgent-dialog]');
+      if (dialog) {
+        dialog.querySelector('[data-urgent-form]').hidden = false;
+        dialog.querySelector('[data-urgent-done]').hidden = true;
+        dialog.showModal();
+      }
+      return;
+    }
+    const again = target.closest('[data-whatsapp-again]');
+    if (again) {
+      const record = adminData().requests.find((item) => item.id === again.dataset.whatsappAgain);
+      if (record?.message) openWhatsApp(record.message);
+      return;
+    }
+    const video = target.closest('[data-video]');
+    if (video) {
+      openVideo(video.dataset.video, video.dataset.videoTitle);
+      return;
+    }
+    if (target.closest('[data-close-video]')) {
+      closeVideo();
+      return;
+    }
+
+    /* ---- Administration ---- */
+    if (target.closest('[data-admin-logout]')) {
+      adminLogout();
+      state.adminView = 'home';
+      rerenderAdmin();
+      return;
+    }
+    if (target.closest('[data-admin-menu]')) {
+      document.body.classList.toggle('admin-menu-open');
+      return;
+    }
+    const adminViewButton = target.closest('[data-admin-view]');
     if (adminViewButton) {
       state.adminView = adminViewButton.dataset.adminView || 'home';
-      renderRoute(location.pathname, { preserveScroll: true });
+      document.body.classList.remove('admin-menu-open');
+      renderRoute(location.pathname);
       return;
     }
-    const adminEdit = event.target.closest('[data-admin-edit="content"]');
-    if (adminEdit) {
-      const record = adminData().content.find((item) => item.id === adminEdit.dataset.adminId);
-      const dialog = document.querySelector('[data-admin-dialog]');
-      const form = dialog?.querySelector('[data-admin-content-form]');
-      if (record && dialog && form) {
-        form.elements.id.value = record.id;
-        form.elements.areaFr.value = record.area.fr;
-        form.elements.areaEn.value = record.area.en;
-        form.elements.titleFr.value = record.title.fr;
-        form.elements.titleEn.value = record.title.en;
-        form.elements.status.value = record.status;
-        dialog.showModal();
-      }
+    const typeFilter = target.closest('[data-admin-type-filter]');
+    if (typeFilter) {
+      const value = typeFilter.dataset.adminTypeFilter;
+      typeFilter.parentElement.querySelectorAll('button').forEach((node) => node.classList.toggle('is-active', node === typeFilter));
+      document.querySelectorAll('[data-admin-row="requests"]').forEach((row) => { row.hidden = value !== 'all' && row.dataset.type !== value; });
       return;
     }
-    const adminAction = event.target.closest('[data-admin-action]');
-    if (adminAction?.dataset.adminAction === 'new-content') {
-      const dialog = document.querySelector('[data-admin-dialog]');
-      const form = dialog?.querySelector('[data-admin-content-form]');
-      if (dialog && form) {
-        form.reset();
-        form.elements.id.value = '';
-        form.elements.status.value = 'draft';
-        dialog.showModal();
-      }
+    const exportButton = target.closest('[data-admin-export]');
+    if (exportButton) {
+      exportRequests(exportButton.dataset.adminExport);
       return;
     }
-    if (adminAction?.dataset.adminAction === 'new-training') {
-      const dialog = document.querySelector('[data-admin-training-dialog]');
-      const form = dialog?.querySelector('[data-admin-training-form]');
-      if (dialog && form) {
-        form.reset();
-        form.elements.status.value = 'draft';
-        dialog.showModal();
-      }
-      return;
-    }
-    if (adminAction?.dataset.adminAction === 'reset') {
-      if (window.confirm(tr('Réinitialiser les données locales du dashboard ?', 'Reset local dashboard data?'))) {
-        saveAdminData(adminSeed());
-        renderRoute(location.pathname, { preserveScroll: true });
-      }
-      return;
-    }
-    const closeAdminDialog = event.target.closest('[data-admin-close-dialog]');
-    if (closeAdminDialog) {
-      closeAdminDialog.closest('dialog')?.close();
-      return;
-    }
-    const trainingToggle = event.target.closest('[data-admin-toggle-training]');
-    if (trainingToggle) {
+    const courseToggle = target.closest('[data-admin-toggle-course]');
+    if (courseToggle) {
       const data = adminData();
-      const course = data.training.find((item) => item.id === trainingToggle.dataset.adminToggleTraining);
-      if (course) course.status = course.status === 'published' ? 'draft' : 'published';
+      const slug = courseToggle.dataset.adminToggleCourse;
+      const published = data.courses[slug]?.status !== 'draft';
+      data.courses[slug] = { ...(data.courses[slug] || {}), status: published ? 'draft' : 'published' };
       saveAdminData(data);
-      renderRoute(location.pathname, { preserveScroll: true });
+      rerenderAdmin();
       return;
     }
-    const mediaToggle = event.target.closest('[data-admin-toggle-media]');
+    const productToggle = target.closest('[data-admin-toggle-product]');
+    if (productToggle) {
+      const data = adminData();
+      const key = productToggle.dataset.adminToggleProduct;
+      data.inventory[key] = data.inventory[key] === false;
+      saveAdminData(data);
+      rerenderAdmin();
+      return;
+    }
+    const removeSession = target.closest('[data-admin-remove-session]');
+    if (removeSession) {
+      const data = adminData();
+      data.extraSessions = data.extraSessions.filter((session) => session.id !== removeSession.dataset.adminRemoveSession);
+      saveAdminData(data);
+      rerenderAdmin();
+      return;
+    }
+    const mediaToggle = target.closest('[data-admin-toggle-media]');
     if (mediaToggle) {
       const data = adminData();
       const media = data.media.find((item) => item.id === mediaToggle.dataset.adminToggleMedia);
       if (media) media.status = media.status === 'published' ? 'draft' : 'published';
       saveAdminData(data);
-      renderRoute(location.pathname, { preserveScroll: true });
+      rerenderAdmin();
       return;
     }
-    const productToggle = event.target.closest('[data-admin-product]');
-    if (productToggle) {
-      const data = adminData();
-      const [mode, rawIndex] = productToggle.dataset.adminProduct.split(':');
-      const index = Number(rawIndex);
-      if (Array.isArray(data.inventory[mode])) data.inventory[mode][index] = data.inventory[mode][index] === false;
-      saveAdminData(data);
-      renderRoute(location.pathname, { preserveScroll: true });
+    const adminEdit = target.closest('[data-admin-edit="content"]');
+    const adminAction = target.closest('[data-admin-action]');
+    if (adminEdit || adminAction?.dataset.adminAction === 'new-content') {
+      const dialog = document.querySelector('[data-admin-dialog]');
+      const form = dialog?.querySelector('[data-admin-content-form]');
+      if (!dialog || !form) return;
+      form.reset();
+      const record = adminEdit ? adminData().content.find((item) => item.id === adminEdit.dataset.adminId) : null;
+      form.elements.id.value = record?.id || '';
+      form.elements.areaFr.value = record?.area.fr || '';
+      form.elements.areaEn.value = record?.area.en || '';
+      form.elements.titleFr.value = record?.title.fr || '';
+      form.elements.titleEn.value = record?.title.en || '';
+      form.elements.status.value = record?.status || 'draft';
+      dialog.showModal();
       return;
     }
-    const adminTab = event.target.closest('[data-admin-tab]');
-    if (adminTab) {
-      const panel = adminTab.dataset.adminTab;
-      document.querySelectorAll('[data-admin-tab]').forEach((buttonNode) => buttonNode.setAttribute('aria-selected', String(buttonNode === adminTab)));
-      document.querySelectorAll('[data-admin-panel]').forEach((panelNode) => { panelNode.hidden = panelNode.dataset.adminPanel !== panel; });
-      return;
-    }
-    const video = event.target.closest('[data-video]');
-    if (video) {
-      openVideo(video.dataset.video, video.dataset.videoTitle);
-      return;
-    }
-    if (event.target.closest('[data-close-video]')) {
-      closeVideo();
+    if (adminAction?.dataset.adminAction === 'reset') {
+      if (window.confirm(tr('Réinitialiser les données locales du dashboard ?', 'Reset local dashboard data?'))) {
+        saveAdminData(adminSeed());
+        rerenderAdmin();
+      }
     }
   }, { signal });
 
   root.addEventListener('input', (event) => {
-    const search = event.target.closest('[data-admin-search]');
+    const target = event.target;
+    if (target.matches('[data-store-search]')) {
+      applySkuFilters();
+      return;
+    }
+    if (target.matches('[data-range]')) {
+      const output = target.closest('form')?.querySelector(`[data-range-out="${target.name}"]`);
+      if (output) output.textContent = target.value;
+      return;
+    }
+    const search = target.closest('[data-admin-search]');
     if (!search) return;
     const value = search.value.trim().toLowerCase();
-    const scope = search.dataset.adminSearch;
-    root.querySelectorAll(`[data-admin-row="${scope}"]`).forEach((row) => {
-      row.hidden = value && !row.dataset.searchText.includes(value);
+    root.querySelectorAll(`[data-admin-row="${search.dataset.adminSearch}"]`).forEach((row) => {
+      row.hidden = Boolean(value) && !row.dataset.searchText.includes(value);
     });
   }, { signal });
 
   root.addEventListener('change', (event) => {
-    const statusSelect = event.target.closest('[data-admin-request-status]');
+    const target = event.target;
+    if (target.matches('[data-enroll-course]')) {
+      updateEnrollSessions(target.closest('dialog'));
+      return;
+    }
+    if (target.matches('[data-delivery]')) {
+      const address = target.closest('form')?.querySelector('[data-address]');
+      if (address) {
+        address.hidden = target.dataset.delivery === 'pickup';
+        address.querySelector('input').required = !address.hidden;
+      }
+      return;
+    }
+    const statusSelect = target.closest('[data-admin-request-status]');
     if (statusSelect) {
       const data = adminData();
       const request = data.requests.find((item) => item.id === statusSelect.dataset.adminRequestStatus);
       if (request) {
         request.status = statusSelect.value;
-        request.updated = new Date().toLocaleDateString('fr-FR').replaceAll('/', '.');
+        request.updated = todayStamp();
       }
       saveAdminData(data);
-      renderRoute(location.pathname, { preserveScroll: true });
+      rerenderAdmin();
       return;
     }
-    const setting = event.target.closest('[data-admin-setting]');
+    const setting = target.closest('[data-admin-setting]');
     if (setting) {
       const data = adminData();
       data.settings[setting.dataset.adminSetting] = setting.checked;
       saveAdminData(data);
-      renderRoute(location.pathname, { preserveScroll: true });
+      rerenderAdmin();
     }
   }, { signal });
 
   root.addEventListener('submit', (event) => {
-    const loginForm = event.target.closest('[data-admin-login]');
-    if (loginForm) {
+    const form = event.target;
+
+    if (form.matches('[data-product-form]')) {
       event.preventDefault();
-      const formData = new FormData(loginForm);
-      const username = String(formData.get('username') || '').trim();
-      const password = String(formData.get('password') || '');
-      const status = loginForm.querySelector('[data-admin-login-status]');
-      if (username === ADMIN_USERNAME && password === ADMIN_PASSWORD) {
+      const item = productCartItem(form.dataset.productForm, formValue(form, 'option'), formValue(form, 'qty'));
+      if (!item) return;
+      addToCart(item);
+      if (event.submitter?.hasAttribute('data-buy-now')) navigate(pageHref('/checkout'));
+      return;
+    }
+
+    if (form.matches('[data-checkout-form]')) {
+      event.preventDefault();
+      if (!state.cart.length) return;
+      const lines = state.cart.map((item) => ({ name: item.name, option: item.option || '', qty: item.qty, kind: item.kind }));
+      const id = makeReference('CMD');
+      const delivery = formValue(form, 'delivery');
+      const message = [
+        `🛒 ${tr('COMMANDE', 'ORDER')} ${id}`,
+        `${tr('Client', 'Customer')} : ${formValue(form, 'name')}${formValue(form, 'company') ? ` — ${formValue(form, 'company')}` : ''}`,
+        `${tr('Téléphone', 'Phone')} : ${formValue(form, 'phone')}`,
+        formValue(form, 'email') ? `Email : ${formValue(form, 'email')}` : '',
+        `${tr('Remise', 'Handover')} : ${delivery}${formValue(form, 'address') ? ` — ${formValue(form, 'address')}` : ''}`,
+        '',
+        ...lines.map((line) => `• ${line.qty} × ${line.name}${line.option ? ` (${line.option})` : ''}`),
+        '',
+        formValue(form, 'note') ? `${tr('Précisions', 'Details')} : ${formValue(form, 'note')}` : '',
+        tr('Merci de m’envoyer le devis.', 'Please send me the quote.'),
+      ].filter((line, index, all) => line !== '' || (index > 0 && all[index - 1] !== '')).join('\n').replace(/\n{3,}/g, '\n\n');
+      const record = recordRequest({ id, type: 'order', customer: formValue(form, 'name') + (formValue(form, 'company') ? ` · ${formValue(form, 'company')}` : ''), phone: formValue(form, 'phone'), email: formValue(form, 'email'), service: tr('Boutique', 'Store'), detail: `${delivery}${formValue(form, 'address') ? ` — ${formValue(form, 'address')}` : ''}${formValue(form, 'note') ? ` · ${formValue(form, 'note')}` : ''}`, lines, message });
+      openWhatsApp(message);
+      state.cart = [];
+      persistCart();
+      document.querySelectorAll('[data-cart-count]').forEach((node) => { node.textContent = '0'; });
+      const drawer = document.querySelector('[data-cart-drawer]');
+      if (drawer) drawer.innerHTML = cartPanel();
+      const container = document.querySelector('[data-checkout]');
+      if (container) {
+        container.innerHTML = `<div data-checkout-done>${orderConfirmation(record)}</div>`;
+        document.querySelector('.nv-steps')?.querySelectorAll('li').forEach((node) => { node.className = 'is-done'; });
+        container.scrollIntoView({ behavior: 'smooth', block: 'start' });
+      }
+      return;
+    }
+
+    if (form.matches('[data-enroll-form]')) {
+      event.preventDefault();
+      const course = academyCourses.find((item) => item.slug === formValue(form, 'course'));
+      if (!course) return;
+      const session = formValue(form, 'session');
+      const id = makeReference('INS');
+      const seats = Number(formValue(form, 'seats')) || 1;
+      const message = [
+        `🎓 ${tr('INSCRIPTION', 'REGISTRATION')} ${id} — MIRS Academy`,
+        `${tr('Parcours', 'Pathway')} : ${local(course.name)}`,
+        `Session : ${session ? formatDate(session) : tr('prochaine session disponible', 'next available session')}`,
+        `${tr('Participant(s)', 'Participant(s)')} : ${seats}`,
+        `${tr('Nom', 'Name')} : ${formValue(form, 'name')}${formValue(form, 'company') ? ` — ${formValue(form, 'company')}` : ''}`,
+        `${tr('Téléphone', 'Phone')} : ${formValue(form, 'phone')}`,
+        formValue(form, 'email') ? `Email : ${formValue(form, 'email')}` : '',
+        `${tr('Financement', 'Funding')} : ${formValue(form, 'funding')}`,
+        formValue(form, 'note') ? `${tr('Remarques', 'Notes')} : ${formValue(form, 'note')}` : '',
+      ].filter(Boolean).join('\n');
+      const record = recordRequest({ id, type: 'enrolment', customer: formValue(form, 'name') + (formValue(form, 'company') ? ` · ${formValue(form, 'company')}` : ''), phone: formValue(form, 'phone'), email: formValue(form, 'email'), service: 'MIRS Academy', course: course.slug, courseName: local(course.name), session, seats, detail: `${local(course.name)} · ${seats} ${tr('participant(s)', 'participant(s)')} · ${formValue(form, 'funding')}${formValue(form, 'note') ? ` · ${formValue(form, 'note')}` : ''}`, message });
+      openWhatsApp(message);
+      form.hidden = true;
+      dialogSuccess(form.closest('dialog').querySelector('[data-enroll-done]'), tr('Demande d’inscription <em>envoyée.</em>', 'Registration request <em>sent.</em>'), tr(`MIRS confirme votre place pour « ${local(course.name)} » et vous communique les modalités.`, `MIRS will confirm your seat for “${local(course.name)}” and share the details.`), record);
+      return;
+    }
+
+    if (form.matches('[data-urgent-form]')) {
+      event.preventDefault();
+      const id = makeReference('URG');
+      const reflexes = [...document.querySelectorAll('[data-reflex-item]:checked')].map((input) => input.value);
+      const message = [
+        `🚨 ${tr('URGENCE MAINTENANCE', 'MAINTENANCE EMERGENCY')} ${id}`,
+        `${tr('Problème', 'Issue')} : ${formValue(form, 'issue')}`,
+        `Impact : ${formValue(form, 'impact')}`,
+        `${tr('Contact', 'Contact')} : ${formValue(form, 'name')} — ${formValue(form, 'phone')}`,
+        `${tr('Lieu', 'Location')} : ${formValue(form, 'location')}`,
+        formValue(form, 'message') ? `${tr('Détails', 'Details')} : ${formValue(form, 'message')}` : '',
+        reflexes.length ? `${tr('Déjà vérifié', 'Already checked')} : ${reflexes.join(' / ')}` : '',
+        tr('Merci de me rappeler au plus vite.', 'Please call me back as soon as possible.'),
+      ].filter(Boolean).join('\n');
+      const record = recordRequest({ id, type: 'urgent', priority: 'high', customer: `${formValue(form, 'name')} · ${formValue(form, 'location')}`, phone: formValue(form, 'phone'), service: formValue(form, 'issue'), detail: `${formValue(form, 'impact')}${formValue(form, 'message') ? ` · ${formValue(form, 'message')}` : ''}`, message });
+      openWhatsApp(message);
+      form.hidden = true;
+      dialogSuccess(form.closest('dialog').querySelector('[data-urgent-done]'), tr('Alerte <em>envoyée.</em>', 'Alert <em>sent.</em>'), tr('Gardez votre téléphone à portée de main : MIRS vous rappelle. Si WhatsApp ne s’est pas ouvert, appelez le +224 622 05 13 21.', 'Keep your phone at hand: MIRS will call you back. If WhatsApp did not open, call +224 622 05 13 21.'), record);
+      return;
+    }
+
+    if (form.matches('[data-ticket-form]') || form.matches('[data-contract-form]')) {
+      event.preventDefault();
+      const contract = form.matches('[data-contract-form]');
+      const id = makeReference(contract ? 'CTR' : 'INT');
+      const message = contract ? [
+        `🛠 ${tr('DEVIS CONTRAT DE MAINTENANCE', 'MAINTENANCE CONTRACT QUOTE')} ${id}`,
+        `${tr('Postes', 'Workstations')} : ${formValue(form, 'workstations')} · ${tr('Serveurs', 'Servers')} : ${formValue(form, 'servers')} · ${tr('Imprimantes', 'Printers')} : ${formValue(form, 'printers')}`,
+        `${tr('Visites', 'Visits')} : ${formValue(form, 'frequency')} · ${tr('Couverture', 'Coverage')} : ${formValue(form, 'coverage')}`,
+        `${tr('Contact', 'Contact')} : ${formValue(form, 'name')} — ${formValue(form, 'phone')}${formValue(form, 'company') ? ` — ${formValue(form, 'company')}` : ''}`,
+      ].join('\n') : [
+        `🔧 ${tr('DEMANDE D’INTERVENTION', 'SERVICE REQUEST')} ${id}`,
+        `${tr('Équipement', 'Equipment')} : ${formValue(form, 'equipment')} · ${tr('Délai', 'Timing')} : ${formValue(form, 'when')}`,
+        `${tr('Contact', 'Contact')} : ${formValue(form, 'name')} — ${formValue(form, 'phone')}${formValue(form, 'company') ? ` — ${formValue(form, 'company')}` : ''}`,
+        `${tr('Problème', 'Issue')} : ${formValue(form, 'message')}`,
+      ].join('\n');
+      recordRequest({ id, type: contract ? 'contract' : 'ticket', customer: formValue(form, 'name') + (formValue(form, 'company') ? ` · ${formValue(form, 'company')}` : ''), phone: formValue(form, 'phone'), service: contract ? tr('Contrat de maintenance', 'Maintenance contract') : formValue(form, 'equipment'), detail: contract ? `${formValue(form, 'workstations')} ${tr('postes', 'workstations')}, ${formValue(form, 'servers')} ${tr('serveurs', 'servers')}, ${formValue(form, 'printers')} ${tr('imprimantes', 'printers')} · ${formValue(form, 'frequency')} · ${formValue(form, 'coverage')}` : `${formValue(form, 'when')} · ${formValue(form, 'message')}`, message });
+      openWhatsApp(message);
+      const status = form.querySelector('[data-form-status]');
+      if (status) status.innerHTML = `${tr('Envoyé', 'Sent')} · ${tr('référence', 'reference')} <b>${id}</b>`;
+      showToast(`${tr('Demande envoyée', 'Request sent')} · ${id}`);
+      return;
+    }
+
+    if (form.matches('[data-contact-form]')) {
+      event.preventDefault();
+      const id = makeReference('CTC');
+      const message = [
+        `${tr('Bonjour MIRS, je suis', 'Hello MIRS, I am')} ${formValue(form, 'name')}.`,
+        formValue(form, 'company') ? `${tr('Organisation', 'Organization')} : ${formValue(form, 'company')}` : '',
+        `${tr('Sujet', 'Topic')} : ${formValue(form, 'topic')}`,
+        `Contact : ${formValue(form, 'email')}`,
+        `${tr('Besoin', 'Need')} : ${formValue(form, 'message')}`,
+        `${tr('Référence', 'Reference')} : ${id}`,
+      ].filter(Boolean).join('\n');
+      recordRequest({ id, type: 'contact', customer: formValue(form, 'name') + (formValue(form, 'company') ? ` · ${formValue(form, 'company')}` : ''), email: formValue(form, 'email'), service: formValue(form, 'topic'), detail: formValue(form, 'message'), message });
+      const status = form.querySelector('[data-form-status]');
+      if (status) status.textContent = tr('Ouverture de WhatsApp avec votre demande préremplie…', 'Opening WhatsApp with your pre-filled request…');
+      openWhatsApp(message);
+      return;
+    }
+
+    /* ---- Administration ---- */
+    if (form.matches('[data-admin-login]')) {
+      event.preventDefault();
+      const status = form.querySelector('[data-admin-login-status]');
+      if (formValue(form, 'username') === ADMIN_USERNAME && String(new FormData(form).get('password') || '') === ADMIN_PASSWORD) {
         try {
           sessionStorage.setItem(ADMIN_SESSION_KEY, 'authenticated');
         } catch {
@@ -1908,73 +2911,44 @@ function bind() {
           return;
         }
         state.adminView = 'home';
-        renderRoute(location.pathname, { preserveScroll: true });
+        rerenderAdmin();
       } else if (status) {
         status.textContent = tr('Identifiant ou mot de passe incorrect.', 'Incorrect username or password.');
-        loginForm.classList.remove('is-invalid');
-        requestAnimationFrame(() => loginForm.classList.add('is-invalid'));
-        loginForm.elements.password.value = '';
-        loginForm.elements.username.focus();
+        form.classList.remove('is-invalid');
+        requestAnimationFrame(() => form.classList.add('is-invalid'));
+        form.elements.password.value = '';
+        form.elements.username.focus();
       }
       return;
     }
-    const trainingForm = event.target.closest('[data-admin-training-form]');
-    if (trainingForm) {
+    if (form.matches('[data-admin-session-form]')) {
       event.preventDefault();
-      const formData = new FormData(trainingForm);
       const data = adminData();
-      data.training.push({
-        id: `course-${Date.now()}`,
-        name: { fr: String(formData.get('nameFr') || '').trim(), en: String(formData.get('nameEn') || '').trim() },
-        category: { fr: String(formData.get('categoryFr') || '').trim(), en: String(formData.get('categoryEn') || '').trim() },
-        status: String(formData.get('status') || 'draft'),
-        sessions: 0,
-        learners: 0,
-        capacity: 18,
-      });
+      data.extraSessions.push({ id: `session-${Date.now()}`, slug: formValue(form, 'slug'), date: formValue(form, 'date'), place: formValue(form, 'place') || 'Conakry' });
       saveAdminData(data);
-      document.querySelector('[data-admin-training-dialog]')?.close();
-      state.adminView = 'training';
-      renderRoute(location.pathname, { preserveScroll: true });
+      rerenderAdmin();
+      showToast(tr('Session ajoutée au calendrier', 'Session added to the calendar'));
       return;
     }
-    const adminForm = event.target.closest('[data-admin-content-form]');
-    if (adminForm) {
+    if (form.matches('[data-admin-content-form]')) {
       event.preventDefault();
-      const formData = new FormData(adminForm);
       const data = adminData();
-      const id = String(formData.get('id') || '').trim() || `content-${Date.now()}`;
+      const id = formValue(form, 'id') || `content-${Date.now()}`;
       const record = {
         id,
-        area: { fr: String(formData.get('areaFr') || '').trim(), en: String(formData.get('areaEn') || '').trim() },
-        type: { fr: tr('Page', 'Page'), en: 'Page' },
-        title: { fr: String(formData.get('titleFr') || '').trim(), en: String(formData.get('titleEn') || '').trim() },
-        status: String(formData.get('status') || 'draft'),
-        updated: new Date().toLocaleDateString('fr-FR').replaceAll('/', '.'),
+        area: { fr: formValue(form, 'areaFr'), en: formValue(form, 'areaEn') },
+        type: { fr: 'Page', en: 'Page' },
+        title: { fr: formValue(form, 'titleFr'), en: formValue(form, 'titleEn') },
+        status: formValue(form, 'status') || 'draft',
+        updated: todayStamp(),
       };
       const existing = data.content.findIndex((item) => item.id === id);
       if (existing >= 0) data.content[existing] = { ...data.content[existing], ...record };
       else data.content.unshift(record);
       saveAdminData(data);
-      document.querySelector('[data-admin-dialog]')?.close();
-      state.adminView = 'content';
-      renderRoute(location.pathname, { preserveScroll: true });
-      return;
+      form.closest('dialog')?.close();
+      rerenderAdmin();
     }
-    const form = event.target.closest('[data-contact-form]');
-    if (!form) return;
-    event.preventDefault();
-    const data = new FormData(form);
-    const message = [
-      `Bonjour MIRS, je suis ${data.get('name')}.`,
-      data.get('company') ? `Organisation : ${data.get('company')}` : '',
-      `Sujet : ${data.get('topic')}`,
-      `Contact : ${data.get('email')}`,
-      `Besoin : ${data.get('message')}`,
-    ].filter(Boolean).join('\n');
-    const status = form.querySelector('[data-form-status]');
-    status.textContent = tr('Ouverture de WhatsApp avec votre demande préremplie…', 'Opening WhatsApp with your pre-filled request…');
-    window.open(`https://wa.me/224622051321?text=${encodeURIComponent(message)}`, '_blank', 'noopener');
   }, { signal });
 
   document.documentElement.dataset.theme = state.theme;
@@ -1985,29 +2959,38 @@ function renderRoute(path = location.pathname, options = {}) {
   const info = routeInfo(path);
   state.locale = info.locale;
   const clean = info.route;
+  const parts = clean.split('/').filter(Boolean);
   const markup = clean === '/' ? home()
     : clean === '/informatique' ? branch('informatique')
       : clean === '/imprimerie' ? branch('imprimerie')
-        : clean === '/formation' ? training()
-          : clean === '/creation-agence' ? branch('creation-agence')
-            : clean === '/maintenance' ? branch('maintenance')
-              : clean === '/informatique/boutique' ? shop('tech')
-                : clean === '/imprimerie/boutique' ? shop('print')
-                  : clean === '/realisations' ? projects()
-                    : clean === '/contact' ? contact()
-                      : clean === '/checkout' ? checkout()
-                        : clean === '/admin' ? dashboard()
-                          : notFound();
+        : clean === '/creation-agence' ? branch('creation-agence')
+          : clean === '/maintenance' ? maintenancePage()
+            : clean === '/amadeus' ? amadeusPage()
+              : clean === '/formation' ? training()
+                : parts[0] === 'formation' && parts.length === 2 ? courseDetail(parts[1])
+                  : clean === '/informatique/boutique' ? techStore()
+                    : parts[0] === 'informatique' && parts[1] === 'boutique' && parts.length === 3 ? productDetail(parts[2])
+                      : clean === '/imprimerie/boutique' ? shop('print')
+                        : clean === '/realisations' ? projects()
+                          : clean === '/contact' ? contact()
+                            : clean === '/checkout' ? checkout()
+                              : clean === '/admin' ? dashboard()
+                                : notFound();
   closeVideo();
-  document.body.classList.remove('menu-open', 'cart-open');
-  document.body.classList.toggle('is-nova', clean !== '/admin');
+  document.body.classList.remove('menu-open', 'cart-open', 'admin-menu-open');
+  document.body.classList.add('is-nova');
+  document.body.classList.toggle('is-admin', clean === '/admin');
   document.getElementById('app').innerHTML = markup;
   document.documentElement.dataset.theme = state.theme;
   document.documentElement.lang = state.locale;
-  document.title = clean === '/' ? 'MIRS — Spatial Systems' : `MIRS — ${clean.split('/').filter(Boolean).pop().replaceAll('-', ' ')}`;
+  const titles = { '/': 'MIRS — Spatial Systems', '/amadeus': 'MIRS — AMADEUS', '/formation': 'MIRS Academy', '/informatique/boutique': tr('MIRS — Boutique informatique', 'MIRS — IT store'), '/checkout': tr('MIRS — Commande', 'MIRS — Checkout'), '/maintenance': tr('MIRS — Maintenance & urgence', 'MIRS — Maintenance & emergency'), '/admin': 'MIRS — Administration' };
+  const course = parts[0] === 'formation' && parts[1] ? academyCourses.find((item) => item.slug === parts[1]) : null;
+  const product = parts[2] ? storeProducts.find((item) => item.id === parts[2]) : null;
+  document.title = titles[clean] || (course ? `${local(course.name)} — MIRS Academy` : product ? `${local(product.name)} — MIRS` : `MIRS — ${(parts.pop() || '').replaceAll('-', ' ')}`);
   bind();
   if (!options.preserveScroll) scrollTo({ top: 0, behavior: 'instant' });
 }
+
 
 addEventListener('popstate', () => renderRoute(location.pathname));
 addEventListener('keydown', (event) => {
