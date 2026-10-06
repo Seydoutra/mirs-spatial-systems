@@ -74,6 +74,17 @@ Les demandes sont enregistrées dans le navigateur qui les envoie et transmises 
 WhatsApp ; l’admin les voit donc sur le même appareil. Un vrai partage entre appareils
 nécessitera une base de données.
 
+## Version 3 — catalogues élargis et Montserrat
+
+- Boutique informatique : 27 produits, dont le MacBook Pro 14" (puce Apple M5 Pro), un serveur
+  informatique et une caméra dôme IP avec photos (`dist/assets/store/`), et 10 nouveaux produits.
+- Boutique imprimerie devenue e-commerce : 15 produits, fiches `/imprimerie/boutique/<produit>`,
+  tirages, panier et checkout partagés avec l’informatique.
+- Les produits sans photo utilisent une illustration propre au site ; ajouter `image` et `fit`
+  dans `dist/mirs-data.js` pour afficher une vraie photo. Les photos de sites tiers ne sont pas
+  reprises (droits d’image).
+- Typographie : Montserrat Light (300) et Bold (700) sur tout le site et l’administration.
+
 ## Mouvement et accessibilité
 
 Entrées de page, révélations au défilement, profondeur légère des photographies,
