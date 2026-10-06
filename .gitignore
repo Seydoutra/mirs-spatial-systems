@@ -12,6 +12,7 @@ dist/*
 !dist/mirs-unified.css
 !dist/mirs-future.css
 !dist/mirs-future.js
+!dist/mirs-nova.css
 !dist/assets/
 !dist/assets/**
 !.github/
