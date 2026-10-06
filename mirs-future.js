@@ -1,4 +1,4 @@
-import { academyCourses, storeCategories, storeProducts, SESSIONS_NOTE } from './mirs-data.js?v=nova-2';
+import { academyCourses, storeCategories, storeProducts, printCategories, printProducts, SESSIONS_NOTE } from './mirs-data.js?v=nova-3';
 
 const BASE_PATH = new URL('.', document.baseURI).pathname.replace(/\/$/, '');
 const AS = `${BASE_PATH}/assets/`;
@@ -51,16 +51,6 @@ const local = (value) => typeof value === 'string' ? value : (value?.[state.loca
 const alternateLanguageHref = () => pageHref(pageRoute(), state.locale === 'fr' ? 'en' : 'fr');
 const searchKey = (value) => String(value || '').toLowerCase().normalize('NFD').replace(/[\u0300-\u036f]/g, '').replace(/[^a-z0-9]+/g, '');
 const escapeHtml = (value) => String(value ?? '').replace(/[&<>"']/g, (char) => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' }[char]));
-
-const products = {
-  print: [
-    { name: { fr: 'Polo personnalisé', en: 'Custom polo shirt' }, category: { fr: 'textile', en: 'textile' }, categoryKey: 'textile', image: 'mirs-media/nimba-polo-transparent.png', detail: { fr: 'Textile de communication produit par notre atelier.', en: 'Branded textile produced by our workshop.' } },
-    { name: { fr: 'Casquette personnalisée', en: 'Custom cap' }, category: { fr: 'textile', en: 'textile' }, categoryKey: 'textile', image: 'mirs-media/sonapi-cap-transparent.png', detail: { fr: 'Une série personnalisée pour vos équipes et événements.', en: 'A personalized series for teams and events.' } },
-    { name: { fr: 'Tote bag', en: 'Tote bag' }, category: { fr: 'textile', en: 'textile' }, categoryKey: 'textile', image: 'catalogue/tote-bag.png', detail: { fr: 'Support utile, personnalisable et durable.', en: 'A useful, customizable and durable medium.' } },
-    { name: { fr: 'Packaging', en: 'Packaging' }, category: { fr: 'support', en: 'collateral' }, categoryKey: 'support', image: 'catalogue/packaging-orange.png', detail: { fr: 'Une présence qui commence avant l’ouverture.', en: 'A brand experience that begins before opening.' } },
-    { name: { fr: 'Signalétique', en: 'Signage' }, category: { fr: 'support', en: 'collateral' }, categoryKey: 'support', image: 'editorial/impression-grand-format.jpg', detail: { fr: 'Grand format, habillage et visibilité.', en: 'Large format, wayfinding and visibility.' } },
-  ],
-};
 
 const courses = academyCourses.map((course) => ({ name: course.name, category: course.category, detail: course.summary }));
 
@@ -287,6 +277,24 @@ const DEVICE_ICONS = {
   server: '<rect x="4" y="3" width="16" height="7" rx="1.5"/><rect x="4" y="14" width="16" height="7" rx="1.5"/><path d="M8 6.5h.01M8 17.5h.01M12 6.5h4M12 17.5h4"/>',
   chip: '<rect x="6" y="6" width="12" height="12" rx="1.5"/><rect x="9.5" y="9.5" width="5" height="5"/><path d="M9 2.5V6M15 2.5V6M9 18v3.5M15 18v3.5M2.5 9H6M2.5 15H6M18 9h3.5M18 15h3.5"/>',
   tools: '<path d="M14.5 6.5a4 4 0 0 0-5.3 5.3L3.5 17.5l3 3 5.7-5.7a4 4 0 0 0 5.3-5.3l-2.5 2.5-2.5-.5-.5-2.5z"/>',
+  aio: '<rect x="3" y="3.5" width="18" height="12.5" rx="1.5"/><path d="M3 13h18M10 16l-1 4h6l-1-4M8 20.5h8"/>',
+  tablet: '<rect x="5" y="2.5" width="14" height="19" rx="2"/><path d="M11 18.5h2"/>',
+  dock: '<rect x="3" y="9" width="18" height="7" rx="2"/><path d="M6.5 12.5h2M11 12.5h.01M14 12.5h.01M17 12.5h.01M12 9V5M10 5h4"/>',
+  projector: '<rect x="2.5" y="8" width="19" height="9" rx="2"/><circle cx="16" cy="12.5" r="2.5"/><path d="M6 12.5h4M5 17v2M19 17v2"/>',
+  scanner: '<path d="M3 13h18v5.5a1.5 1.5 0 0 1-1.5 1.5h-15A1.5 1.5 0 0 1 3 18.5z"/><path d="M5 13l2-7h10l2 7M7 16.5h4"/>',
+  firewall: '<rect x="3" y="4" width="18" height="16" rx="1.5"/><path d="M3 9.3h18M3 14.7h18M9 4v5.3M15 9.3v5.4M9 14.7V20"/>',
+  rack: '<rect x="5" y="2.5" width="14" height="19" rx="1.5"/><path d="M8 6h8M8 9.5h8M8 13h8M8 16.5h3"/>',
+  drive: '<rect x="4" y="5" width="16" height="14" rx="2.5"/><circle cx="12" cy="12" r="3.5"/><path d="M12 12h.01M16.5 16.5h.01"/>',
+  headset: '<path d="M4 14v-2a8 8 0 0 1 16 0v2"/><rect x="3" y="13" width="4" height="6" rx="1.5"/><rect x="17" y="13" width="4" height="6" rx="1.5"/><path d="M19 19c0 1.5-2 2.5-5 2.5"/>',
+  webcam: '<circle cx="12" cy="10" r="6.5"/><circle cx="12" cy="10" r="2.5"/><path d="M8.5 16l-2 5h11l-2-5"/>',
+  card: '<rect x="2.5" y="6" width="19" height="12" rx="1.5"/><circle cx="7.5" cy="11" r="2"/><path d="M12 10h6M12 13h4.5M5 15.5h5"/>',
+  flyer: '<path d="M6 2.5h9l4 4v15H6z"/><path d="M15 2.5v4h4M9 11h7M9 14h7M9 17h4"/>',
+  brochure: '<path d="M3 5.5l6-2 6 2 6-2v15l-6 2-6-2-6 2z"/><path d="M9 3.5v15M15 5.5v15"/>',
+  rollup: '<rect x="7" y="2.5" width="10" height="16" rx="1"/><path d="M5 18.5h14M12 18.5v3M9 21.5h6M9.5 6.5h5M9.5 9.5h5"/>',
+  banner: '<path d="M2.5 6h19v10h-19z"/><path d="M4.5 6V3.5M19.5 6V3.5M5.5 9.5h9M5.5 12.5h6"/>',
+  sticker: '<path d="M20.5 12A8.5 8.5 0 1 1 12 3.5h8.5V12z"/><path d="M20.5 12h-6a2.5 2.5 0 0 1-2.5-2.5V3.5"/>',
+  letterhead: '<path d="M6 10.5V2.5h12v8"/><path d="M3 10.5h18v10H3z"/><path d="M3 10.5l9 6 9-6"/>',
+  calendar: '<rect x="3" y="4.5" width="18" height="16.5" rx="2"/><path d="M3 9.5h18M8 2.5v4M16 2.5v4M7 13h2M11 13h2M15 13h2M7 16.5h2M11 16.5h2"/>',
 };
 
 function deviceArt(icon, size = '') {
@@ -375,7 +383,7 @@ function footer() {
 
 function cartLine(item, index, compact = true) {
   const stepper = `<div class="nv-qty" role="group" aria-label="${tr('Quantité', 'Quantity')}"><button type="button" data-cart-qty="${index}:-1" aria-label="${tr('Diminuer', 'Decrease')}">${ICON_MINUS}</button><b>${item.qty}</b><button type="button" data-cart-qty="${index}:1" aria-label="${tr('Augmenter', 'Increase')}">${ICON_PLUS}</button></div>`;
-  const art = item.icon ? deviceArt(item.icon, 'nv-device--xs') : `<span class="nv-line__tag">${item.kind === 'course' ? 'ACAD' : item.kind === 'print' ? 'PRINT' : 'MIRS'}</span>`;
+  const art = item.image ? `<span class="nv-line__thumb"><img src="${AS}${escapeHtml(item.image)}" alt="" loading="lazy"></span>` : item.icon ? deviceArt(item.icon, 'nv-device--xs') : `<span class="nv-line__tag">${item.kind === 'course' ? 'ACAD' : item.kind === 'print' ? 'PRINT' : 'MIRS'}</span>`;
   return `<li class="nv-line" style="--i:${index}">
     ${art}
     <div class="nv-line__copy"><b>${escapeHtml(item.name)}</b>${item.option ? `<small>${escapeHtml(item.option)}</small>` : ''}${compact ? '' : `<small>${tr('Prix sur devis', 'Price on quotation')}</small>`}</div>
@@ -454,14 +462,6 @@ function universeCards() {
     <div class="nv-unit__top"><span>${item.index} / ${item.signal}</span><i aria-hidden="true">${ICON_ARROW}</i></div>
     <div class="nv-unit__body"><small>${local(item.name)}</small><h3>${local(item.title)}</h3><p>${local(item.detail)}</p></div>
   </a>`).join('');
-}
-
-function homeProductCard(item, mode, index = 0) {
-  const name = local(item.name);
-  return `<article class="nv-product nv-product--${mode}" data-spot data-tilt data-nv="up" style="--d:${index * 80}ms">
-    <div class="nv-product__image"><img src="${AS}${item.image}" alt="${name}" loading="lazy"><span>${mode === 'tech' ? 'MIRS / IT' : 'MIRS / PRINT'}</span></div>
-    <div class="nv-product__body"><small>${local(item.category)}</small><h3>${name}</h3><p>${local(item.detail)}</p><button type="button" class="nv-add" data-add="${name}" data-add-kind="${mode}">${tr('Ajouter au panier', 'Add to cart')} <i aria-hidden="true">${ICON_PLUS}</i></button></div>
-  </article>`;
 }
 
 const methodSteps = [
@@ -601,7 +601,7 @@ function home() {
         <div class="nv-shelf__label"><span>01</span><b>${tr('Boutique informatique', 'IT store')}</b>${link('/informatique/boutique', tr('Tout voir', 'View all'))}</div>
         <div class="nv-skus">${storeProducts.filter((product) => isProductVisible(product.id)).slice(0, 3).map(storeCard).join('')}</div>
         <div class="nv-shelf__label"><span>02</span><b>${tr('Boutique imprimerie', 'Print store')}</b>${link('/imprimerie/boutique', tr('Tout voir', 'View all'))}</div>
-        <div class="nv-products">${products.print.filter((_, index) => isProductVisible(`print:${index}`)).slice(0, 3).map((item, index) => homeProductCard(item, 'print', index)).join('')}</div>
+        <div class="nv-skus">${printProducts.filter((product) => isProductVisible(product.id)).slice(0, 3).map(storeCard).join('')}</div>
       </div>
     </section>
 
@@ -814,43 +814,6 @@ function printMockups() {
   </section>`;
 }
 
-function productCard(item, mode, index = 0) {
-  const name = local(item.name);
-  return `<article class="nv-product nv-product--${mode}" data-product-card data-category="${item.categoryKey}" data-spot data-tilt data-nv="up" style="--d:${index * 70}ms">
-    <div class="nv-product__image"><img src="${AS}${item.image}" alt="${name}" loading="lazy"><span>${mode === 'tech' ? 'MIRS / IT' : 'MIRS / PRINT'}</span></div>
-    <div class="nv-product__body"><small>${local(item.category)}</small><h3>${name}</h3><p>${local(item.detail)}</p><button type="button" class="nv-add" data-add="${name}" data-add-kind="print">${tr('Ajouter au panier', 'Add to cart')} <i aria-hidden="true">${ICON_PLUS}</i></button></div>
-  </article>`;
-}
-
-function shop(kind) {
-  const isTech = kind === 'tech';
-  const name = isTech ? tr('Solutions informatique', 'IT solutions') : tr('Supports imprimés', 'Print materials');
-  const items = products[kind].filter((_, index) => isProductVisible(`print:${index}`));
-  const filters = [...new Map(items.map((item) => [item.categoryKey, local(item.category)])).entries()];
-  const hero = isTech ? 'editorial/equipement-clavier.jpg' : 'mirs-media/nimba-polo-transparent.png';
-  return shell(`<main class="nv-shop nv-shop--${kind}">
-    <section class="nv-shop-hero" data-hero>
-      <div class="nv-hero__aurora" aria-hidden="true"><span></span><span></span><span></span></div>
-      <div class="nv-hero__grid" aria-hidden="true"></div>
-      <div class="nv-shop-hero__layout nv-wrap">
-        <div>
-          <div class="nv-hero__meta" data-nv="fade"><span>${isTech ? 'MIRS / INFRASTRUCTURE' : 'MIRS / PRODUCTION'}</span><span>${isTech ? 'FIELD KIT / 01' : 'PRINT KIT / 02'}</span></div>
-          ${sectionTitle(isTech ? tr('Des solutions adaptées à vos priorités <em>opérationnelles.</em>', 'Solutions aligned with your <em>operational</em> priorities.') : tr('Des supports conçus pour renforcer votre <em>marque.</em>', 'Materials designed to strengthen your <em>brand.</em>'), 'nv-shop-hero__title', 'h1')}
-          <p data-nv="up" style="--d:200ms">${tr('Une sélection de solutions pour cadrer une demande. Chaque élément peut ouvrir un projet plus large.', 'A selection of solutions to scope a request. Each item can open a broader project.')}</p>
-          <div class="nv-hero__actions" data-nv="up" style="--d:300ms">${button(isTech ? '/imprimerie/boutique' : '/informatique/boutique', isTech ? tr('Boutique imprimerie', 'Print store') : tr('Boutique informatique', 'IT store'), 'ghost')}</div>
-        </div>
-        <div class="nv-shop-hero__object ${isTech ? 'is-photo' : 'is-cutout'}" data-tilt aria-hidden="true"><span class="nv-mockup__halo"></span><img src="${AS}${hero}" alt=""><b>${isTech ? 'FIELD KIT' : 'PRINT KIT'}</b><small>${String(items.length).padStart(2, '0')} ${tr('ARTICLES', 'ITEMS')}</small></div>
-      </div>
-    </section>
-    <section class="nv-section nv-wrap">
-      <div class="nv-head"><div>${eyebrow(tr('EXPLORER PAR BESOIN', 'EXPLORE BY NEED'))}${sectionTitle(name)}</div><p data-nv="up">${tr('Ajoutez les sujets à discuter ; nous transformerons la liste en décision claire.', 'Add the subjects to discuss; we will turn the list into a clear decision.')}</p></div>
-      <div class="nv-filters" role="toolbar" aria-label="${tr('Filtrer le catalogue', 'Filter catalogue')}"><span class="nv-filters__pill" aria-hidden="true" data-filter-pill></span><button type="button" data-filter="all" class="is-active">${tr('Tout', 'All')}</button>${filters.map(([key, label]) => `<button type="button" data-filter="${key}">${label}</button>`).join('')}</div>
-      <div class="nv-products nv-products--catalog">${items.map((item, index) => productCard(item, kind, index)).join('')}</div>
-    </section>
-    ${closingPortal(tr('Transformons votre sélection en <em>projet.</em>', 'Let’s turn your selection into a <em>project.</em>'), tr('Votre liste devient un brief : nous revenons vers vous avec une première lecture.', 'Your list becomes a brief: we come back with an initial reading.'), tr('Préparer le brief', 'Prepare the brief'))}
-  </main>`, isTech ? '/informatique/boutique' : '/imprimerie/boutique');
-}
-
 /* ==================================================================
    Administration — MIRS Nova control room.
    Reads the same data as the public site: orders, registrations,
@@ -1022,20 +985,16 @@ function adminViewMarkup(view, data) {
     </section>`;
   }
   if (view === 'stores') {
-    const liveTech = storeProducts.filter((product) => data.inventory[product.id] !== false).length;
+    const all = [...storeProducts, ...printProducts];
+    const live = all.filter((product) => data.inventory[product.id] !== false).length;
     return `<section class="nva-view">
-      ${adminToolbar('stores', tr('Rechercher un produit…', 'Search a product…'), `<span class="nva-toolbar__stat">${liveTech} / ${storeProducts.length} ${tr('produits en ligne', 'products live')}</span>`)}
-      <div class="nva-card"><div class="nva-card__head"><div><span class="nva-card__label">01 / IT STORE</span><h2>${tr('Boutique informatique', 'IT store')}</h2></div><a href="${pageHref('/informatique/boutique')}" data-link class="nva-link">${tr('Voir la boutique', 'View store')} ↗</a></div>
-        <div class="nva-products">${storeProducts.map((product) => {
-          const live = data.inventory[product.id] !== false;
-          return `<article class="nva-product" data-admin-row="stores" data-search-text="${escapeHtml(`${local(product.name)} ${product.category}`.toLowerCase())}">${deviceArt(product.icon, 'nv-device--xs')}<div><b>${local(product.name)}</b><small>${local(storeCategories.find((category) => category.key === product.category)?.label)} · ${tr('sur devis', 'on quotation')}</small></div><button type="button" class="nva-switch ${live ? 'is-on' : ''}" data-admin-toggle-product="${product.id}" role="switch" aria-checked="${live}" aria-label="${tr('Visibilité', 'Visibility')} ${local(product.name)}"><i></i></button></article>`;
-        }).join('')}</div></div>
-      <div class="nva-card"><div class="nva-card__head"><div><span class="nva-card__label">02 / PRINT</span><h2>${tr('Boutique imprimerie', 'Print store')}</h2></div><a href="${pageHref('/imprimerie/boutique')}" data-link class="nva-link">${tr('Voir la boutique', 'View store')} ↗</a></div>
-        <div class="nva-products">${products.print.map((product, index) => {
-          const key = `print:${index}`;
-          const live = data.inventory[key] !== false;
-          return `<article class="nva-product" data-admin-row="stores" data-search-text="${escapeHtml(local(product.name).toLowerCase())}"><img src="${AS}${product.image}" alt="" loading="lazy"><div><b>${local(product.name)}</b><small>${local(product.category)}</small></div><button type="button" class="nva-switch ${live ? 'is-on' : ''}" data-admin-toggle-product="${key}" role="switch" aria-checked="${live}" aria-label="${tr('Visibilité', 'Visibility')} ${local(product.name)}"><i></i></button></article>`;
-        }).join('')}</div></div>
+      ${adminToolbar('stores', tr('Rechercher un produit…', 'Search a product…'), `<span class="nva-toolbar__stat">${live} / ${all.length} ${tr('produits en ligne', 'products live')}</span>`)}
+      ${[['tech', '01 / IT STORE', tr('Boutique informatique', 'IT store')], ['print', '02 / PRINT STORE', tr('Boutique imprimerie', 'Print store')]].map(([kind, label, title]) => `<div class="nva-card"><div class="nva-card__head"><div><span class="nva-card__label">${label}</span><h2>${title} · ${STORES[kind].products.length}</h2></div><a href="${pageHref(STORES[kind].base)}" data-link class="nva-link">${tr('Voir la boutique', 'View store')} ↗</a></div>
+        <div class="nva-products">${STORES[kind].products.map((product) => {
+          const isLive = data.inventory[product.id] !== false;
+          const thumb = product.image ? `<img src="${AS}${product.image}" alt="" loading="lazy">` : deviceArt(product.icon, 'nv-device--xs');
+          return `<article class="nva-product" data-admin-row="stores" data-search-text="${escapeHtml(searchKey(`${local(product.name)} ${product.category}`))}">${thumb}<div><b>${local(product.name)}</b><small>${local(productCategory(product)?.label)} · ${tr('sur devis', 'on quotation')}</small></div><button type="button" class="nva-switch ${isLive ? 'is-on' : ''}" data-admin-toggle-product="${product.id}" role="switch" aria-checked="${isLive}" aria-label="${tr('Visibilité', 'Visibility')} ${escapeHtml(local(product.name))}"><i></i></button></article>`;
+        }).join('')}</div></div>`).join('')}
     </section>`;
   }
   if (view === 'content') {
@@ -1520,35 +1479,79 @@ function maintenancePage() {
 
 /* ---------------- IT store (e-commerce, quote-based) ---------------- */
 
+/* ---------------- Stores (e-commerce, quote-based) ---------------- */
+
+const STORES = {
+  tech: { key: 'tech', products: storeProducts, categories: storeCategories, base: '/informatique/boutique' },
+  print: { key: 'print', products: printProducts, categories: printCategories, base: '/imprimerie/boutique' },
+};
+storeProducts.forEach((product) => { product.store = 'tech'; });
+printProducts.forEach((product) => { product.store = 'print'; });
+const findProduct = (id) => storeProducts.find((item) => item.id === id) || printProducts.find((item) => item.id === id);
+const productCategory = (product) => STORES[product.store].categories.find((item) => item.key === product.category);
+
+function productMedia(product, size = '') {
+  if (!product.image) return deviceArt(product.icon, size);
+  return `<div class="nv-photo nv-photo--${product.fit || 'cover'} ${size}"><span class="nv-photo__halo" aria-hidden="true"></span><img src="${AS}${product.image}" alt="${escapeHtml(local(product.name))}" loading="lazy" decoding="async"></div>`;
+}
+
 function storeCard(product, index = 0) {
   const name = local(product.name);
-  const category = storeCategories.find((item) => item.key === product.category);
+  const store = STORES[product.store];
+  const href = pageHref(`${store.base}/${product.id}`);
   return `<article class="nv-sku" data-sku data-category="${product.category}" data-name="${escapeHtml(searchKey(`${name} ${local(product.detail)} ${product.option?.values.join(' ') || ''}`))}" data-spot data-nv="up" style="--d:${(index % 3) * 70}ms">
-    <a href="${pageHref(`/informatique/boutique/${product.id}`)}" data-link class="nv-sku__media" data-cursor="${tr('Voir', 'View')}">${deviceArt(product.icon)}<span class="nv-sku__cat">${local(category?.label)}</span></a>
+    <a href="${href}" data-link class="nv-sku__media" data-cursor="${tr('Voir', 'View')}">${productMedia(product)}<span class="nv-sku__cat">${local(productCategory(product)?.label)}</span>${product.featured ? `<span class="nv-sku__flag">${tr('Sélection MIRS', 'MIRS pick')}</span>` : ''}</a>
     <div class="nv-sku__body">
-      <h3><a href="${pageHref(`/informatique/boutique/${product.id}`)}" data-link>${name}</a></h3>
+      <h3><a href="${href}" data-link>${name}</a></h3>
       <p>${local(product.detail)}</p>
       <div class="nv-sku__price"><span>${tr('Prix', 'Price')}</span><b>${tr('Sur devis', 'On quotation')}</b></div>
-      <div class="nv-sku__actions"><button type="button" class="nv-btn nv-btn--primary nv-btn--sm" data-add-product="${product.id}" data-magnetic>${roll(tr('Ajouter', 'Add'))}<i aria-hidden="true">${ICON_CART}</i></button>${link(`/informatique/boutique/${product.id}`, tr('Détails', 'Details'))}</div>
+      <div class="nv-sku__actions"><button type="button" class="nv-btn nv-btn--primary nv-btn--sm" data-add-product="${product.id}" data-magnetic>${roll(tr('Ajouter', 'Add'))}<i aria-hidden="true">${ICON_CART}</i></button>${link(`${store.base}/${product.id}`, tr('Détails', 'Details'))}</div>
     </div>
   </article>`;
 }
 
-function techStore() {
-  const items = storeProducts.filter((product) => isProductVisible(product.id));
-  const categories = storeCategories.filter((category) => items.some((product) => product.category === category.key));
-  return shell(`<main class="nv-store">
+function storeCopy(kind) {
+  return kind === 'print' ? {
+    meta: ['MIRS / PRINT STORE', tr('IMPRIMERIE', 'PRINT')],
+    title: tr('Vos supports de marque, <em>imprimés.</em>', 'Your brand materials, <em>printed.</em>'),
+    intro: tr('Choisissez supports, tirages et quantités : MIRS vous envoie un devis, valide le BAT avec vous et produit dans son atelier.', 'Choose materials, print runs and quantities: MIRS sends a quote, approves the proof with you and produces it in its workshop.'),
+    perks: [tr('Devis sous confirmation MIRS', 'Quote confirmed by MIRS'), tr('BAT validé avant production', 'Proof approved before production'), tr('Retrait ou livraison à convenir', 'Pick-up or delivery to be arranged')],
+    detailPerks: [tr('BAT avant production', 'Proof before production'), tr('Conseil sur les supports', 'Advice on materials'), tr('Produit par l’atelier MIRS', 'Made by the MIRS workshop')],
+    steps: [[tr('Panier', 'Cart'), tr('Choisissez supports, tirages et quantités.', 'Choose materials, runs and quantities.')], [tr('Fichiers & BAT', 'Files & proof'), tr('Envoyez vos fichiers ou confiez-nous la création, puis validez le BAT.', 'Send your files or let us design them, then approve the proof.')], [tr('Production & remise', 'Production & handover'), tr('L’atelier produit et MIRS confirme la date de remise.', 'The workshop produces and MIRS confirms the handover date.')]],
+    hero: printProducts.filter((product) => product.image).slice(0, 3),
+    other: ['/informatique/boutique', tr('Boutique informatique', 'IT store')],
+    closing: [tr('Un projet d’impression plus large ? <em>Parlons-en.</em>', 'A bigger print project? <em>Let’s talk.</em>'), tr('Campagne, événement ou identité complète : MIRS chiffre l’ensemble des supports.', 'Campaign, event or full identity: MIRS prices all the materials together.')],
+  } : {
+    meta: ['MIRS / STORE', tr('INFORMATIQUE', 'IT')],
+    title: tr('L’équipement informatique, <em>installé.</em>', 'IT equipment, <em>installed.</em>'),
+    intro: tr('Composez votre panier, passez commande : MIRS vous envoie un devis, confirme la disponibilité et peut installer le matériel sur site.', 'Build your cart and place your order: MIRS sends a quote, confirms availability and can install the equipment on site.'),
+    perks: [tr('Devis sous confirmation MIRS', 'Quote confirmed by MIRS'), tr('Configuration & installation', 'Configuration & installation'), tr('Retrait ou livraison à convenir', 'Pick-up or delivery to be arranged')],
+    detailPerks: [tr('Configuration avant remise', 'Configured before handover'), tr('Installation sur site possible', 'On-site installation available'), tr('Conseil avant achat', 'Advice before purchase')],
+    steps: [[tr('Panier', 'Cart'), tr('Choisissez produits, options et quantités.', 'Choose products, options and quantities.')], [tr('Commande', 'Order'), tr('Renseignez vos coordonnées et le mode de remise.', 'Fill in your details and delivery mode.')], [tr('Devis & livraison', 'Quote & delivery'), tr('MIRS confirme le montant, la disponibilité et la date.', 'MIRS confirms the amount, availability and date.')]],
+    hero: storeProducts.filter((product) => product.image).slice(0, 3),
+    other: ['/imprimerie/boutique', tr('Boutique imprimerie', 'Print store')],
+    closing: [tr('Un besoin plus large ? <em>Parlons-en.</em>', 'A bigger need? <em>Let’s talk.</em>'), tr('Équipement d’un site complet, renouvellement de parc ou projet réseau : MIRS chiffre l’ensemble.', 'Equipping a full site, refreshing assets or a network project: MIRS prices the whole project.')],
+  };
+}
+
+function storePage(kind) {
+  const store = STORES[kind];
+  const copy = storeCopy(kind);
+  const items = store.products.filter((product) => isProductVisible(product.id));
+  const categories = store.categories.filter((category) => items.some((product) => product.category === category.key));
+  return shell(`<main class="nv-store nv-store--${kind}">
     <section class="nv-shop-hero nv-store-hero" data-hero>
       <div class="nv-hero__aurora" aria-hidden="true"><span></span><span></span><span></span></div>
       <div class="nv-hero__grid" aria-hidden="true"></div>
       <div class="nv-shop-hero__layout nv-wrap">
         <div>
-          <div class="nv-hero__meta" data-nv="fade"><span>MIRS / STORE</span><span>${tr('INFORMATIQUE', 'IT')}</span><span>${String(items.length).padStart(2, '0')} ${tr('PRODUITS', 'PRODUCTS')}</span></div>
-          ${sectionTitle(tr('L’équipement informatique, <em>installé.</em>', 'IT equipment, <em>installed.</em>'), 'nv-shop-hero__title', 'h1')}
-          <p data-nv="up" style="--d:200ms">${tr('Composez votre panier, passez commande : MIRS vous envoie un devis, confirme la disponibilité et peut installer le matériel sur site.', 'Build your cart and place your order: MIRS sends a quote, confirms availability and can install the equipment on site.')}</p>
-          <ul class="nv-store-perks" data-nv="up" style="--d:300ms"><li><i aria-hidden="true">${ICON_CHECK}</i>${tr('Devis sous confirmation MIRS', 'Quote confirmed by MIRS')}</li><li><i aria-hidden="true">${ICON_CHECK}</i>${tr('Configuration & installation', 'Configuration & installation')}</li><li><i aria-hidden="true">${ICON_CHECK}</i>${tr('Retrait ou livraison à convenir', 'Pick-up or delivery to be arranged')}</li></ul>
+          <div class="nv-hero__meta" data-nv="fade"><span>${copy.meta[0]}</span><span>${copy.meta[1]}</span><span>${String(items.length).padStart(2, '0')} ${tr('PRODUITS', 'PRODUCTS')}</span></div>
+          ${sectionTitle(copy.title, 'nv-shop-hero__title', 'h1')}
+          <p data-nv="up" style="--d:200ms">${copy.intro}</p>
+          <ul class="nv-store-perks" data-nv="up" style="--d:300ms">${copy.perks.map((perk) => `<li><i aria-hidden="true">${ICON_CHECK}</i>${perk}</li>`).join('')}</ul>
+          <div class="nv-hero__actions" data-nv="up" style="--d:380ms"><a href="#catalogue" class="nv-btn nv-btn--primary" data-magnetic>${roll(tr('Voir le catalogue', 'Browse the catalogue'))}<i aria-hidden="true">${ICON_DOWN}</i></a>${button(copy.other[0], copy.other[1], 'ghost')}</div>
         </div>
-        <div class="nv-store-hero__stack" data-tilt aria-hidden="true">${['laptop', 'router', 'server'].map((icon, index) => `<div class="nv-store-hero__card nv-store-hero__card--${index + 1}">${deviceArt(icon)}</div>`).join('')}</div>
+        <div class="nv-store-hero__stack" data-tilt aria-hidden="true">${copy.hero.map((product, index) => `<div class="nv-store-hero__card nv-store-hero__card--${index + 1}">${productMedia(product)}</div>`).join('')}</div>
       </div>
     </section>
 
@@ -1559,35 +1562,34 @@ function techStore() {
       </div>
       <p class="nv-store-count" data-store-count>${items.length} ${tr('produits', 'products')}</p>
       <div class="nv-skus">${items.map(storeCard).join('')}</div>
-      <p class="nv-store-empty" data-store-empty hidden>${tr('Aucun produit ne correspond. Décrivez votre besoin : MIRS trouve l’équipement adapté.', 'No product matches. Describe your need: MIRS will find the right equipment.')} ${link('/contact', 'Contact')}</p>
+      <p class="nv-store-empty" data-store-empty hidden>${tr('Aucun produit ne correspond. Décrivez votre besoin : MIRS trouve la solution adaptée.', 'No product matches. Describe your need: MIRS will find the right solution.')} ${link('/contact', 'Contact')}</p>
     </section>
 
     <section class="nv-section nv-wrap nv-howto">
-      <div class="nv-head"><div>${eyebrow(tr('COMMENT COMMANDER', 'HOW TO ORDER'))}${sectionTitle(tr('Trois étapes jusqu’à<br>votre <em>équipement.</em>', 'Three steps to<br>your <em>equipment.</em>'))}</div></div>
-      <ol class="nv-howto__list">${[
-        [tr('Panier', 'Cart'), tr('Choisissez produits, options et quantités.', 'Choose products, options and quantities.')],
-        [tr('Commande', 'Order'), tr('Renseignez vos coordonnées et le mode de remise.', 'Fill in your details and delivery mode.')],
-        [tr('Devis & livraison', 'Quote & delivery'), tr('MIRS confirme le montant, la disponibilité et la date.', 'MIRS confirms the amount, availability and date.')],
-      ].map((step, index) => `<li data-spot data-nv="up" style="--d:${index * 80}ms"><span>0${index + 1}</span><b>${step[0]}</b><p>${step[1]}</p></li>`).join('')}</ol>
+      <div class="nv-head"><div>${eyebrow(tr('COMMENT COMMANDER', 'HOW TO ORDER'))}${sectionTitle(tr('Trois étapes jusqu’à<br>votre <em>commande.</em>', 'Three steps to<br>your <em>order.</em>'))}</div></div>
+      <ol class="nv-howto__list">${copy.steps.map((step, index) => `<li data-spot data-nv="up" style="--d:${index * 80}ms"><span>0${index + 1}</span><b>${step[0]}</b><p>${step[1]}</p></li>`).join('')}</ol>
     </section>
 
-    ${closingPortal(tr('Un besoin plus large ? <em>Parlons-en.</em>', 'A bigger need? <em>Let’s talk.</em>'), tr('Équipement d’un site complet, renouvellement de parc ou projet réseau : MIRS chiffre l’ensemble.', 'Equipping a full site, refreshing assets or a network project: MIRS prices the whole project.'), tr('Demander un devis global', 'Request a global quote'))}
-  </main>`, '/informatique/boutique');
+    ${closingPortal(copy.closing[0], copy.closing[1], tr('Demander un devis global', 'Request a global quote'))}
+  </main>`, store.base);
 }
 
-function productDetail(id) {
-  const product = storeProducts.find((item) => item.id === id);
-  if (!product || !isProductVisible(product.id)) return notFound();
+function productDetail(id, kind) {
+  const product = findProduct(id);
+  if (!product || product.store !== kind || !isProductVisible(product.id)) return notFound();
+  const store = STORES[kind];
+  const copy = storeCopy(kind);
   const name = local(product.name);
-  const category = storeCategories.find((item) => item.key === product.category);
-  const related = storeProducts.filter((item) => item.id !== id && item.category === product.category && isProductVisible(item.id)).concat(storeProducts.filter((item) => item.category !== product.category && isProductVisible(item.id))).slice(0, 3);
+  const category = productCategory(product);
+  const visible = store.products.filter((item) => item.id !== id && isProductVisible(item.id));
+  const related = [...visible.filter((item) => item.category === product.category), ...visible.filter((item) => item.category !== product.category)].slice(0, 3);
   return shell(`<main class="nv-pdp">
     <section class="nv-section nv-wrap nv-pdp__top">
-      <nav class="nv-crumbs" aria-label="${tr('Fil d’Ariane', 'Breadcrumb')}" data-nv="fade"><a href="${pageHref('/informatique/boutique')}" data-link>${tr('Boutique', 'Store')}</a><span>/</span><span>${local(category?.label)}</span><span>/</span><span>${name}</span></nav>
+      <nav class="nv-crumbs" aria-label="${tr('Fil d’Ariane', 'Breadcrumb')}" data-nv="fade"><a href="${pageHref(store.base)}" data-link>${kind === 'print' ? tr('Boutique imprimerie', 'Print store') : tr('Boutique informatique', 'IT store')}</a><span>/</span><span>${local(category?.label)}</span><span>/</span><span>${name}</span></nav>
       <div class="nv-pdp__layout">
-        <div class="nv-pdp__media" data-tilt data-spot>${deviceArt(product.icon, 'nv-device--xl')}<span class="nv-sku__cat">${local(category?.label)}</span></div>
+        <div class="nv-pdp__media" data-tilt data-spot>${productMedia(product, 'nv-device--xl')}<span class="nv-sku__cat">${local(category?.label)}</span></div>
         <form class="nv-pdp__info" data-product-form="${product.id}">
-          ${eyebrow(`MIRS STORE / ${local(category?.label).toUpperCase()}`)}
+          ${eyebrow(`${kind === 'print' ? 'MIRS PRINT' : 'MIRS STORE'} / ${local(category?.label).toUpperCase()}`)}
           ${sectionTitle(name, 'nv-pdp__title', 'h1')}
           <p data-nv="up">${local(product.detail)}</p>
           <div class="nv-sku__price nv-sku__price--lg" data-nv="up"><span>${tr('Prix', 'Price')}</span><b>${tr('Sur devis', 'On quotation')}</b><small>${tr('Montant confirmé par MIRS selon configuration et quantité.', 'Amount confirmed by MIRS according to configuration and quantity.')}</small></div>
@@ -1597,7 +1599,7 @@ function productDetail(id) {
             <button type="submit" class="nv-btn nv-btn--primary nv-btn--lg" data-magnetic>${roll(tr('Ajouter au panier', 'Add to cart'))}<i aria-hidden="true">${ICON_CART}</i></button>
             <button type="submit" class="nv-btn nv-btn--ghost nv-btn--lg" data-buy-now data-magnetic>${roll(tr('Commander', 'Order now'))}<i aria-hidden="true">${ICON_ARROW}</i></button>
           </div>
-          <ul class="nv-store-perks" data-nv="up"><li><i aria-hidden="true">${ICON_CHECK}</i>${tr('Configuration avant remise', 'Configured before handover')}</li><li><i aria-hidden="true">${ICON_CHECK}</i>${tr('Installation sur site possible', 'On-site installation available')}</li><li><i aria-hidden="true">${ICON_CHECK}</i>${tr('Conseil avant achat', 'Advice before purchase')}</li></ul>
+          <ul class="nv-store-perks" data-nv="up">${copy.detailPerks.map((perk) => `<li><i aria-hidden="true">${ICON_CHECK}</i>${perk}</li>`).join('')}</ul>
         </form>
       </div>
     </section>
@@ -1605,9 +1607,10 @@ function productDetail(id) {
       <div>${eyebrow(tr('CARACTÉRISTIQUES', 'SPECIFICATIONS'), '01')}${sectionTitle(tr('Les points <em>clés.</em>', 'Key <em>points.</em>'))}</div>
       <dl class="nv-specs">${product.specs.map(([label, value]) => `<div data-nv="up"><dt>${local(label)}</dt><dd>${local(value)}</dd></div>`).join('')}${product.option ? `<div data-nv="up"><dt>${local(product.option.label)}</dt><dd>${product.option.values.join(' · ')}</dd></div>` : ''}</dl>
     </section>
-    <section class="nv-section nv-wrap"><div class="nv-head"><div>${eyebrow(tr('À ASSOCIER', 'GOES WELL WITH'))}${sectionTitle(tr('Complétez votre <em>commande.</em>', 'Complete your <em>order.</em>'))}</div>${link('/informatique/boutique', tr('Toute la boutique', 'Full store'))}</div><div class="nv-skus">${related.map(storeCard).join('')}</div></section>
-  </main>`, `/informatique/boutique/${id}`);
+    <section class="nv-section nv-wrap"><div class="nv-head"><div>${eyebrow(tr('À ASSOCIER', 'GOES WELL WITH'))}${sectionTitle(tr('Complétez votre <em>commande.</em>', 'Complete your <em>order.</em>'))}</div>${link(store.base, tr('Toute la boutique', 'Full store'))}</div><div class="nv-skus">${related.map(storeCard).join('')}</div></section>
+  </main>`, `${store.base}/${id}`);
 }
+
 
 /* ---------------- Checkout ---------------- */
 
@@ -1779,10 +1782,10 @@ function addToCart(item) {
 }
 
 function productCartItem(id, option, qty = 1) {
-  const product = storeProducts.find((item) => item.id === id);
+  const product = findProduct(id);
   if (!product) return null;
   const chosen = option || product.option?.values[0] || '';
-  return { key: `store:${id}:${chosen}`, id, name: local(product.name), option: chosen, qty: Math.max(1, Math.min(999, Number(qty) || 1)), kind: 'store', icon: product.icon };
+  return { key: `${product.store}:${id}:${chosen}`, id, name: local(product.name), option: chosen, qty: Math.max(1, Math.min(999, Number(qty) || 1)), kind: product.store === 'print' ? 'print' : 'store', icon: product.icon, image: product.image || '' };
 }
 
 function updateEnrollSessions(dialog, preferred = '') {
@@ -2725,9 +2728,9 @@ function bind() {
     }
     const search = target.closest('[data-admin-search]');
     if (!search) return;
-    const value = search.value.trim().toLowerCase();
+    const value = searchKey(search.value);
     root.querySelectorAll(`[data-admin-row="${search.dataset.adminSearch}"]`).forEach((row) => {
-      row.hidden = Boolean(value) && !row.dataset.searchText.includes(value);
+      row.hidden = Boolean(value) && !searchKey(row.dataset.searchText).includes(value);
     });
   }, { signal });
 
@@ -2968,9 +2971,10 @@ function renderRoute(path = location.pathname, options = {}) {
             : clean === '/amadeus' ? amadeusPage()
               : clean === '/formation' ? training()
                 : parts[0] === 'formation' && parts.length === 2 ? courseDetail(parts[1])
-                  : clean === '/informatique/boutique' ? techStore()
-                    : parts[0] === 'informatique' && parts[1] === 'boutique' && parts.length === 3 ? productDetail(parts[2])
-                      : clean === '/imprimerie/boutique' ? shop('print')
+                  : clean === '/informatique/boutique' ? storePage('tech')
+                    : parts[0] === 'informatique' && parts[1] === 'boutique' && parts.length === 3 ? productDetail(parts[2], 'tech')
+                      : clean === '/imprimerie/boutique' ? storePage('print')
+                        : parts[0] === 'imprimerie' && parts[1] === 'boutique' && parts.length === 3 ? productDetail(parts[2], 'print')
                         : clean === '/realisations' ? projects()
                           : clean === '/contact' ? contact()
                             : clean === '/checkout' ? checkout()
@@ -2983,9 +2987,9 @@ function renderRoute(path = location.pathname, options = {}) {
   document.getElementById('app').innerHTML = markup;
   document.documentElement.dataset.theme = state.theme;
   document.documentElement.lang = state.locale;
-  const titles = { '/': 'MIRS — Spatial Systems', '/amadeus': 'MIRS — AMADEUS', '/formation': 'MIRS Academy', '/informatique/boutique': tr('MIRS — Boutique informatique', 'MIRS — IT store'), '/checkout': tr('MIRS — Commande', 'MIRS — Checkout'), '/maintenance': tr('MIRS — Maintenance & urgence', 'MIRS — Maintenance & emergency'), '/admin': 'MIRS — Administration' };
+  const titles = { '/': 'MIRS — Spatial Systems', '/amadeus': 'MIRS — AMADEUS', '/formation': 'MIRS Academy', '/informatique/boutique': tr('MIRS — Boutique informatique', 'MIRS — IT store'), '/imprimerie/boutique': tr('MIRS — Boutique imprimerie', 'MIRS — Print store'), '/checkout': tr('MIRS — Commande', 'MIRS — Checkout'), '/maintenance': tr('MIRS — Maintenance & urgence', 'MIRS — Maintenance & emergency'), '/admin': 'MIRS — Administration' };
   const course = parts[0] === 'formation' && parts[1] ? academyCourses.find((item) => item.slug === parts[1]) : null;
-  const product = parts[2] ? storeProducts.find((item) => item.id === parts[2]) : null;
+  const product = parts[2] ? findProduct(parts[2]) : null;
   document.title = titles[clean] || (course ? `${local(course.name)} — MIRS Academy` : product ? `${local(product.name)} — MIRS` : `MIRS — ${(parts.pop() || '').replaceAll('-', ' ')}`);
   bind();
   if (!options.preserveScroll) scrollTo({ top: 0, behavior: 'instant' });
