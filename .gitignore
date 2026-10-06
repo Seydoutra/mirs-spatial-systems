@@ -10,9 +10,9 @@ dist/*
 !dist/_redirects
 !dist/favicon.svg
 !dist/mirs-unified.css
-!dist/mirs-future.css
 !dist/mirs-future.js
 !dist/mirs-nova.css
+!dist/mirs-data.js
 !dist/assets/
 !dist/assets/**
 !.github/

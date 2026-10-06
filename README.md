@@ -31,8 +31,7 @@ propriétaires n’a été copié.
 Refonte futuriste de toute l’interface publique, en gardant l’essence MIRS : bleu
 électrique `#0000FE`, cyan `#00CCFF` et blanc, le logo aux deux mains, les cinq univers,
 les 81 références réelles, les films, l’Academy, les boutiques et le brief WhatsApp.
-Les styles publics vivent dans `dist/mirs-nova.css` ; l’administration garde
-`dist/mirs-future.css` sans changement.
+Tous les styles (site et administration) vivent dans `dist/mirs-nova.css`.
 
 Inspirations (Ecoriz, TBD Studio, Startify), réinterprétées sans copier de code ni de média :
 
@@ -49,6 +48,31 @@ horizontal épinglé avec aperçu au survol, rubans inclinés selon la vitesse d
 cartes 3D, radar, orbite des formations, carte de Conakry avec horloge GMT, 404 « glitch ».
 Tout est désactivé ou simplifié avec `prefers-reduced-motion` ; le curseur personnalisé
 n’apparaît qu’avec une souris. Posters des films : `dist/assets/mirs-media/posters/`.
+
+## Version 2 — e-learning, e-commerce, AMADEUS, maintenance (octobre 2026)
+
+- **AMADEUS** : MIRS mis en avant comme représentant exclusif (bandeau d’accueil, lien
+  « AMADEUS · Exclusif » dans la navigation, page `/amadeus`, mentions Academy et pied de page).
+- **MIRS Academy** (`/formation`) : catalogue e-learning filtrable, calendrier des sessions,
+  pages programme `/formation/<parcours>` avec modules et leçons détaillés, et inscription
+  à une session dans une fenêtre dédiée, transmise sur WhatsApp. Les dates sont **indicatives**
+  et confirmées par MIRS à l’inscription.
+- **Boutique informatique** (`/informatique/boutique`) : catalogue avec recherche et filtres,
+  fiches produit `/informatique/boutique/<produit>` (options, quantité), panier avec quantités
+  et checkout `/checkout` (coordonnées, mode de remise, confirmation avec référence).
+  Les prix sont **sur devis** : aucun montant publié, aucun paiement en ligne.
+- **Maintenance** (`/maintenance`) : bouton d’intervention d’urgence (alerte prioritaire
+  sur WhatsApp + appel direct), liste de premiers réflexes, demande d’intervention et
+  configurateur de contrat de maintenance.
+- **Références** : mur de logos en grille, chaque logo entier et lisible.
+- **Administration** (`/admin`) refaite : dashboard, urgences, commandes, inscriptions,
+  toutes les demandes (filtres, recherche, export CSV), formations et sessions (ajout de
+  sessions, publication), catalogue (visibilité des produits), contenus, médias, paramètres.
+
+Données modifiables : `dist/mirs-data.js` (parcours, modules, sessions, produits).
+Les demandes sont enregistrées dans le navigateur qui les envoie et transmises à MIRS sur
+WhatsApp ; l’admin les voit donc sur le même appareil. Un vrai partage entre appareils
+nécessitera une base de données.
 
 ## Mouvement et accessibilité
 
