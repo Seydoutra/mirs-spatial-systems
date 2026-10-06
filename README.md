@@ -26,6 +26,30 @@ Il s’agit d’une interprétation originale des interfaces publiques. Le code 
 privé des références n’est pas disponible ; aucun de leurs médias ou composants
 propriétaires n’a été copié.
 
+## Refonte « MIRS Nova » (octobre 2026)
+
+Refonte futuriste de toute l’interface publique, en gardant l’essence MIRS : bleu
+électrique `#0000FE`, cyan `#00CCFF` et blanc, le logo aux deux mains, les cinq univers,
+les 81 références réelles, les films, l’Academy, les boutiques et le brief WhatsApp.
+Les styles publics vivent dans `dist/mirs-nova.css` ; l’administration garde
+`dist/mirs-future.css` sans changement.
+
+Inspirations (Ecoriz, TBD Studio, Startify), réinterprétées sans copier de code ni de média :
+
+| Référence | Adaptation dans MIRS Nova |
+| --- | --- |
+| Ecoriz | Navigation flottante en pilule de verre, grand média arrondi qui s’ouvre au défilement, chiffres clés |
+| TBD Studio | Titres révélés mot à mot, liste de services avec image qui suit le curseur, cartes de méthode empilées, grand logotype en pied de page |
+| Startify | Badge « système actif », grille de fond masquée, halos lumineux, bento des univers avec bordure lumineuse au survol |
+
+Effets : préchargeur (une fois par session), rideau entre les pages, champ de particules
+réactif au curseur, aurores animées, curseur annulaire avec libellés, boutons magnétiques,
+texte qui s’allume au défilement, compteurs, texte « scramble » au survol, films en défilement
+horizontal épinglé avec aperçu au survol, rubans inclinés selon la vitesse de défilement,
+cartes 3D, radar, orbite des formations, carte de Conakry avec horloge GMT, 404 « glitch ».
+Tout est désactivé ou simplifié avec `prefers-reduced-motion` ; le curseur personnalisé
+n’apparaît qu’avec une souris. Posters des films : `dist/assets/mirs-media/posters/`.
+
 ## Mouvement et accessibilité
 
 Entrées de page, révélations au défilement, profondeur légère des photographies,
