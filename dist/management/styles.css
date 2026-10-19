@@ -12,3 +12,13 @@
 .trial-detail>p{color:#697384!important}
 @media(max-width:620px){.module-card p{font-size:10px}.hero-note{font-size:8px}.preview-caption{font-size:8px}}
 .skip:not(:focus){clip-path:inset(50%);width:1px;height:1px;overflow:hidden;white-space:nowrap}
+.expertise-section{display:grid;grid-template-columns:.65fr 1.35fr;gap:72px;align-items:center;padding:72px 50px 0}
+.expertise-number{text-align:center;position:relative;padding:35px 0;background:radial-gradient(ellipse,#d9f5ff90,transparent 70%)}
+.expertise-number>strong{font-size:132px;font-weight:500;letter-spacing:-9px;line-height:1;color:#0000fe}
+.expertise-number>strong>span{font-size:26px;font-weight:500;letter-spacing:-1px;margin-left:12px;color:#417597}
+.expertise-number>p{font-size:12px;color:#697384;margin-top:8px;letter-spacing:.3px}
+.expertise-copy h2{font-size:34px;letter-spacing:-1.3px;font-weight:550;line-height:1.2;margin-top:22px}
+.expertise-copy>p{font-size:12px;color:#697384;line-height:1.9;margin-top:19px;max-width:570px}
+.expertise-copy>p.expertise-signature{font-size:11px;color:#17538b;border-left:2px solid #00ccff;padding-left:14px;margin-top:22px}
+@media(max-width:800px){.expertise-section{gap:35px;padding:60px 20px 0}.expertise-number>strong{font-size:108px}.expertise-copy h2{font-size:28px}}
+@media(max-width:620px){.expertise-section{grid-template-columns:1fr;padding:48px 10px 0;gap:15px}.expertise-number{padding:15px 0 24px}.expertise-number>strong{font-size:98px;letter-spacing:-6px}.expertise-number>strong>span{font-size:23px;letter-spacing:-.7px}.expertise-copy{text-align:center}.expertise-copy h2{font-size:29px;margin-top:19px}.expertise-copy>p{font-size:12px}.expertise-copy>p.expertise-signature{text-align:left;font-size:11px;max-width:330px;margin-inline:auto}}
