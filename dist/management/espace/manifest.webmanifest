@@ -1,0 +1,19 @@
+{
+  "name": "MIRS",
+  "short_name": "MIRS",
+  "description": "Plateforme de gestion MIRS",
+  "start_url": "./",
+  "scope": "./",
+  "display": "standalone",
+  "background_color": "#02030D",
+  "theme_color": "#0000FE",
+  "lang": "fr",
+  "icons": [
+    {
+      "src": "brand/mirs-favicon.svg",
+      "sizes": "any",
+      "type": "image/svg+xml",
+      "purpose": "any"
+    }
+  ]
+}
