@@ -1,17 +1,67 @@
-'use strict';
-const menu=document.querySelector('.menu-toggle'),nav=document.querySelector('#navigation');
-function closeMenu(){menu.setAttribute('aria-expanded','false');menu.setAttribute('aria-label','Ouvrir le menu');nav.classList.remove('open')}
-menu.addEventListener('click',()=>{const open=menu.getAttribute('aria-expanded')!=='true';menu.setAttribute('aria-expanded',String(open));menu.setAttribute('aria-label',open?'Fermer le menu':'Ouvrir le menu');nav.classList.toggle('open',open)});
-nav.querySelectorAll('a').forEach(link=>link.addEventListener('click',closeMenu));
-document.addEventListener('keydown',event=>{if(event.key==='Escape'&&menu.getAttribute('aria-expanded')==='true'){closeMenu();menu.focus()}});
-const journeys={
-intervention:{title:'Une intervention réseau, du besoin au compte rendu.',copy:'Préparez le dossier, coordonnez l’équipe technique et conservez les éléments de l’intervention.',steps:[['Comprendre le besoin','Retrouver le client, le contexte et les documents du dossier.','CLIENTS / CRM'],['Préparer la mission','Définir les tâches, le responsable, la date et le matériel nécessaire.','PROJETS / PLANNING'],['Suivre la réalisation','Mettre à jour les tâches et rassembler les pièces et livrables.','TÂCHES / DOCUMENTS'],['Fermer la boucle','Conserver le suivi de la mission et ses documents commerciaux.','RAPPORTS / FINANCE']]},
-projet:{title:'Un projet informatique, de la proposition à la livraison.',copy:'Gardez un contexte commun entre la relation client, la planification et les étapes du projet.',steps:[['Structurer la demande','Rassembler les contacts, les besoins et la proposition du dossier.','CRM / CLIENTS'],['Organiser les étapes','Répartir les tâches, les responsabilités et les échéances.','PROJETS / ÉQUIPE'],['Coordonner les livrables','Suivre la progression et recueillir les documents et les retours.','TÂCHES / PORTAIL'],['Conserver le suivi','Retrouver les validations, les documents et le bilan du projet.','DOCUMENTS / RAPPORTS']]},
-finance:{title:'Un suivi financier, du devis aux pièces justificatives.',copy:'Reliez les documents commerciaux au dossier concerné et retrouvez les échéances et les paiements.',steps:[['Préparer le devis','Retrouver les informations du client et les prestations proposées.','CLIENTS / DEVIS'],['Suivre les documents','Associer les documents commerciaux au projet ou à l’intervention.','PROJETS / FACTURES'],['Enregistrer les mouvements','Suivre les paiements et les dépenses avec leurs justificatifs.','FINANCE / DOCUMENTS'],['Faire le point','Consulter les échéances et exporter les documents utiles.','RAPPORTS / EXPORTS']]}
-};
-const tabs=[...document.querySelectorAll('[data-journey]')];
-function selectTab(tab){const journey=journeys[tab.dataset.journey];tabs.forEach(item=>{item.setAttribute('aria-selected',String(item===tab));item.tabIndex=item===tab?0:-1});document.querySelector('#journey-panel').setAttribute('aria-labelledby',tab.id);document.querySelector('#journey-title').textContent=journey.title;document.querySelector('#journey-copy').textContent=journey.copy;document.querySelector('#journey-steps').replaceChildren(...journey.steps.map(([title,copy,module],i)=>{const li=document.createElement('li'),num=document.createElement('span'),div=document.createElement('div'),h=document.createElement('h4'),p=document.createElement('p'),b=document.createElement('b');num.textContent=String(i+1).padStart(2,'0');h.textContent=title;p.textContent=copy;b.textContent=module;div.append(h,p);li.append(num,div,b);return li}))}
-tabs.forEach((tab,i)=>{tab.addEventListener('click',()=>selectTab(tab));tab.addEventListener('keydown',event=>{let next;if(event.key==='ArrowRight'||event.key==='ArrowDown')next=(i+1)%tabs.length;if(event.key==='ArrowLeft'||event.key==='ArrowUp')next=(i+tabs.length-1)%tabs.length;if(event.key==='Home')next=0;if(event.key==='End')next=tabs.length-1;if(next!==undefined){event.preventDefault();selectTab(tabs[next]);tabs[next].focus()}})});
-const dialog=document.querySelector('#legal-dialog');document.querySelector('#legal-open').addEventListener('click',()=>dialog.showModal());document.querySelector('#legal-close').addEventListener('click',()=>dialog.close());
-dialog.addEventListener('click',event=>{if(event.target===dialog){const r=dialog.getBoundingClientRect();if(event.clientX<r.left||event.clientX>r.right||event.clientY<r.top||event.clientY>r.bottom)dialog.close()}});
-document.querySelector('#year').textContent=String(new Date().getFullYear());
+(() => {
+  'use strict';
+  const menu = document.querySelector('.menu-toggle');
+  const navigation = document.getElementById('navigation');
+  const closeMenu = () => {
+    navigation.classList.remove('open');
+    menu.setAttribute('aria-expanded', 'false');
+    menu.setAttribute('aria-label', 'Ouvrir le menu');
+  };
+  menu.addEventListener('click', () => {
+    const open = menu.getAttribute('aria-expanded') !== 'true';
+    menu.setAttribute('aria-expanded', String(open));
+    menu.setAttribute('aria-label', open ? 'Fermer le menu' : 'Ouvrir le menu');
+    navigation.classList.toggle('open', open);
+  });
+  navigation.querySelectorAll('a').forEach(link => link.addEventListener('click', closeMenu));
+  document.addEventListener('click', event => {
+    if (!event.target.closest('.site-header')) closeMenu();
+  });
+  document.addEventListener('keydown', event => {
+    if (event.key === 'Escape' && menu.getAttribute('aria-expanded') === 'true') {
+      closeMenu();
+      menu.focus();
+    }
+  });
+  const tabs = [...document.querySelectorAll('.demo-tabs [role="tab"]')];
+  const tabList = document.querySelector('.demo-tabs');
+  const orientation = matchMedia('(max-width: 620px)');
+  const setOrientation = () => tabList.setAttribute('aria-orientation', orientation.matches ? 'horizontal' : 'vertical');
+  setOrientation();
+  orientation.addEventListener('change', setOrientation);
+  const activate = (tab, focus = false) => {
+    tabs.forEach(item => {
+      const selected = item === tab;
+      item.setAttribute('aria-selected', String(selected));
+      item.tabIndex = selected ? 0 : -1;
+      document.getElementById(item.getAttribute('aria-controls')).hidden = !selected;
+    });
+    if (focus) tab.focus();
+  };
+  tabs.forEach((tab, index) => {
+    tab.addEventListener('click', () => activate(tab));
+    tab.addEventListener('keydown', event => {
+      const nextKey = orientation.matches ? 'ArrowRight' : 'ArrowDown';
+      const previousKey = orientation.matches ? 'ArrowLeft' : 'ArrowUp';
+      let target;
+      if (event.key === nextKey) target = (index + 1) % tabs.length;
+      if (event.key === previousKey) target = (index + tabs.length - 1) % tabs.length;
+      if (event.key === 'Home') target = 0;
+      if (event.key === 'End') target = tabs.length - 1;
+      if (target !== undefined) {
+        event.preventDefault();
+        activate(tabs[target], true);
+      }
+    });
+  });
+  const dialog = document.getElementById('legal-dialog');
+  document.getElementById('legal-open').addEventListener('click', () => dialog.showModal());
+  document.getElementById('legal-close').addEventListener('click', () => dialog.close());
+  dialog.addEventListener('click', event => {
+    if (event.target === dialog) {
+      const bounds = dialog.getBoundingClientRect();
+      if (event.clientX < bounds.left || event.clientX > bounds.right || event.clientY < bounds.top || event.clientY > bounds.bottom) dialog.close();
+    }
+  });
+  document.getElementById('year').textContent = new Date().getFullYear();
+})();
