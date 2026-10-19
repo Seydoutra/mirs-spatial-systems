@@ -22,3 +22,75 @@
 .expertise-copy>p.expertise-signature{font-size:11px;color:#17538b;border-left:2px solid #00ccff;padding-left:14px;margin-top:22px}
 @media(max-width:800px){.expertise-section{gap:35px;padding:60px 20px 0}.expertise-number>strong{font-size:108px}.expertise-copy h2{font-size:28px}}
 @media(max-width:620px){.expertise-section{grid-template-columns:1fr;padding:48px 10px 0;gap:15px}.expertise-number{padding:15px 0 24px}.expertise-number>strong{font-size:98px;letter-spacing:-6px}.expertise-number>strong>span{font-size:23px;letter-spacing:-.7px}.expertise-copy{text-align:center}.expertise-copy h2{font-size:29px;margin-top:19px}.expertise-copy>p{font-size:12px}.expertise-copy>p.expertise-signature{text-align:left;font-size:11px;max-width:330px;margin-inline:auto}}
+/* Motion stays decorative: content remains readable without JavaScript. */
+.headline-line{display:block}
+.motion-toggle{display:grid;place-items:center;flex-shrink:0;width:33px;height:33px;padding:7px;border:1px solid #d6e0ec;border-radius:50%;background:#ffffff9e;color:#5d6f87;transition:background .2s,border-color .2s}
+.motion-toggle:hover{background:#fff;border-color:#aebfdc}.motion-toggle svg{width:17px;height:17px;fill:none;stroke:currentColor;stroke-width:1.7;stroke-linecap:round;stroke-linejoin:round}
+.motion-toggle .motion-play{display:none}.motion-toggle[aria-pressed=true] .motion-play{display:block}.motion-toggle[aria-pressed=true] .motion-pause{display:none}.motion-toggle:disabled{opacity:.55;cursor:default}.header-actions{gap:18px}
+.brand img{transition:transform .45s cubic-bezier(.2,.7,.2,1)}
+[data-motion=running] .brand:hover img{transform:rotate(-7deg) scale(1.07)}
+[data-motion=running] .top-glow:before{content:"";position:absolute;left:10%;top:-24%;width:65%;height:75%;border-radius:50%;background:radial-gradient(ellipse,#aeeeff45,transparent 67%);filter:blur(45px);animation:halo-drift 19s ease-in-out infinite alternate;pointer-events:none}
+[data-motion=running] :is(.hero h1,.section-heading h2,.expertise-copy h2,.trial-card h2,.final-section h2) .gradient-text{background-size:220% 100%;animation:gradient-drift 10s ease-in-out infinite alternate}
+[data-motion=running] .hero-badge .status-dot{animation:beacon-breathe 3.2s ease-in-out infinite}
+.product-frame{transform-origin:50% 50%;transition:transform .55s cubic-bezier(.2,.7,.2,1),box-shadow .55s}
+[data-motion=running] .product-frame{transform:perspective(1400px) rotateX(var(--tilt-x,0deg)) rotateY(var(--tilt-y,0deg))}
+[data-motion=running] .product-frame:hover{box-shadow:0 32px 80px -24px #19387830,0 4px 16px #21417d0a}
+.feature-card,.module-card,.pricing-card{transition:transform .35s cubic-bezier(.2,.7,.2,1),box-shadow .35s,border-color .35s}
+.feature-icon,.module-card>.icon,.step-number{transition:transform .45s cubic-bezier(.2,.7,.2,1),background .3s}
+[data-motion=running] .feature-card:hover{transform:translateY(-5px)}
+[data-motion=running] .feature-card:hover .feature-icon{transform:rotate(-8deg) scale(1.08)}
+[data-motion=running] .module-card:hover{transform:translateY(-3px);box-shadow:inset 0 0 0 1px #d3e4ff;background:#fcfdff;z-index:1}
+[data-motion=running] .module-card:hover>.icon{transform:translateY(-3px) rotate(-7deg)}
+[data-motion=running] .steps article:hover .step-number{transform:rotate(-7deg) translateY(-4px);background:#f0f8ff}
+[data-motion=running] .button:hover .icon{transform:translateX(3px)}.button .icon{transition:transform .25s}
+[data-motion=running] .button-dark{position:relative;isolation:isolate;overflow:hidden}
+[data-motion=running] .button-dark:after{content:"";position:absolute;inset:-100% 0;z-index:-1;background:linear-gradient(110deg,transparent 35%,#ffffff1c 49%,transparent 63%);transform:translateX(-140%);transition:transform .7s;pointer-events:none}
+[data-motion=running] .button-dark:hover:after{transform:translateX(140%)}
+[data-motion=running] .mini-client .avatar{animation:avatar-breathe 6s ease-in-out infinite}
+[data-motion=running] .final-glow{background-size:140% 140%;animation:final-drift 15s ease-in-out infinite alternate}
+.expertise-number>strong>.animated-count{font:inherit;letter-spacing:inherit;color:inherit;margin:0}
+.trial-duration>.animated-count{display:inline;font:inherit;letter-spacing:inherit;color:inherit;margin:0}
+[data-motion=running] .expertise-number.is-revealed:after{content:"";position:absolute;left:50%;top:50%;width:190px;height:190px;border-radius:50%;border:1px solid #c7e9fb;transform:translate(-50%,-50%);z-index:-1;animation:expertise-ring 1.6s cubic-bezier(.2,.7,.2,1) both}
+.motion-hidden *,.motion-hidden *:before,.motion-hidden *:after{animation-play-state:paused!important}
+@keyframes halo-drift{from{transform:translate(-10%,0) scale(.95)}to{transform:translate(35%,12%) scale(1.13)}}
+@keyframes gradient-drift{from{background-position:0 50%}to{background-position:100% 50%}}
+@keyframes beacon-breathe{0%,100%{box-shadow:0 0 0 3px #0000fe0a}50%{box-shadow:0 0 0 6px #00ccff14}}
+@keyframes avatar-breathe{0%,100%{box-shadow:0 0 0 0 #0000fe05}50%{box-shadow:0 0 0 5px #0000fe05}}
+@keyframes final-drift{from{background-position:0 0}to{background-position:100% 100%}}
+@keyframes expertise-ring{from{opacity:0;transform:translate(-50%,-50%) scale(.55)}50%{opacity:.7}to{opacity:0;transform:translate(-50%,-50%) scale(1.6)}}
+@media(max-width:1050px){.header-actions{gap:13px}.site-header nav{gap:20px}}
+@media(max-width:800px){.header-actions{gap:10px}.site-header nav{gap:12px}.motion-toggle{width:30px;height:30px;padding:6px}}
+@media(max-width:620px){.header-actions{gap:9px}.motion-toggle{width:29px;height:29px}.motion-toggle svg{width:14px;height:14px}.footer-bottom>div{gap:14px;flex-wrap:wrap;justify-content:flex-start}.footer-bottom .motion-toggle-text{flex-basis:100%;text-align:left;padding-bottom:3px}[data-motion=running] .top-glow:before{animation-duration:23s;filter:blur(32px)}}
+@media(prefers-reduced-motion:reduce){.product-frame{transform:none!important}.motion-toggle .motion-play{display:block}.motion-toggle .motion-pause{display:none}}
+/* Offers use the same catalogue and amounts as the MIRS subscription screen. */
+.sr-only{position:absolute;clip-path:inset(50%);width:1px;height:1px;margin:-1px;padding:0;overflow:hidden;white-space:nowrap;border:0}
+.pricing-switch{display:flex;align-items:center;justify-content:center;gap:5px;width:fit-content;padding:5px;margin:-9px auto 34px;background:#f3f6fb;border:1px solid #e3e9f2;border-radius:50px}
+.pricing-switch button{display:flex;align-items:center;justify-content:center;gap:9px;border:0;background:transparent;border-radius:50px;padding:11px 18px;font-size:11px;font-weight:500;color:#69758a;min-width:100px;transition:background .25s,box-shadow .25s,color .25s}
+.pricing-switch button[aria-pressed=true]{color:#172033;background:#fff;box-shadow:0 2px 7px #142d6610}
+.pricing-switch button>span{font-size:8px;color:#006e94;background:#e3f8ff;border:1px solid #d0effb;border-radius:50px;padding:3px 5px}
+.pricing-grid{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:17px;align-items:stretch}
+.pricing-card{position:relative;border:1px solid #e1e7f0;border-radius:20px;background:#fff;padding:30px 27px;min-width:0;display:flex;flex-direction:column;box-shadow:0 8px 25px #142d6603}
+.pricing-featured{border-color:#a6c4fa;background:linear-gradient(150deg,#f1f8ff,#fff 58%);box-shadow:0 12px 35px #173b7b08}
+.plan-eyebrow{font-size:7px;color:#8091aa;letter-spacing:1.1px;font-weight:500;min-height:10px;line-height:1.5}
+.pricing-card h3{font-size:25px;line-height:1.2;font-weight:550;letter-spacing:-.8px;margin-top:15px}
+.plan-description{font-size:11px;color:#69758a;line-height:1.85;margin-top:12px;min-height:62px}
+.plan-price{display:flex;flex-wrap:wrap;gap:6px 8px;align-items:baseline;margin-top:24px}
+.price-amount{font-size:35px;font-weight:550;line-height:1;letter-spacing:-1.4px;color:#172033;white-space:nowrap;display:inline-block}
+.plan-price>span{font-size:9px;color:#7c899d;white-space:nowrap}
+.price-caption{font-size:9px;color:#8a96a9;margin-top:12px;min-height:16px}
+.plan-users{margin-top:20px;color:#6b7b94;font-size:10px}.plan-users strong{color:#415371;font-weight:550}
+.pricing-card .button{font-size:11px;min-height:44px;padding-inline:15px;margin-top:22px;width:100%;gap:12px}
+.pricing-card .button .icon{width:14px;height:14px}
+.plan-divider{border-top:1px solid #e7edf5;margin:25px 0 24px}
+.pricing-card h4{font-size:10px;font-weight:550;color:#526580}
+.pricing-card ul{list-style:none;margin:18px 0 0;padding:0;display:grid;gap:14px}
+.pricing-card li{display:flex;align-items:flex-start;gap:9px;font-size:10px;color:#69758a;line-height:1.7}
+.pricing-card li .icon{width:13px;height:13px;color:#0000fe;margin-top:2px;stroke-width:1.9}
+.pricing-note{text-align:center;max-width:770px;margin:29px auto 0}
+.pricing-note p{font-size:9px;color:#7a879b;line-height:1.85}.pricing-note p+p{font-size:9px;margin-top:7px}
+.pricing-note a{display:inline-flex;font-size:10px;color:#37638c;margin-top:15px;text-decoration:underline;text-underline-offset:3px;text-decoration-color:#c5d7e8}
+[data-motion=running] .pricing-card:hover{transform:translateY(-5px);border-color:#abc9f3;box-shadow:0 18px 45px #142d6610}
+@media(max-width:1050px){.pricing-card{padding:27px 22px}.price-amount{font-size:31px}.pricing-card h3{font-size:23px}.plan-price{gap:6px}.pricing-grid{gap:13px}}
+@media(max-width:800px){.pricing-card{padding:25px 18px}.price-amount{font-size:27px;letter-spacing:-1px}.plan-description{font-size:10px;min-height:76px}.plan-eyebrow{font-size:6px}.pricing-card h3{font-size:22px}.plan-price>span{font-size:8px}.pricing-card li{font-size:9px;gap:7px}.pricing-card .button{font-size:10px;gap:7px}.plan-users{font-size:9px}}
+@media(max-width:620px){.pricing-grid{grid-template-columns:1fr;gap:16px;max-width:440px;margin-inline:auto}.pricing-card{padding:28px 25px;border-radius:18px}.plan-eyebrow{font-size:7px}.pricing-card h3{font-size:27px}.plan-description{font-size:12px;min-height:0;max-width:350px}.plan-price{margin-top:24px;gap:10px}.price-amount{font-size:39px;letter-spacing:-1.5px}.plan-price>span{font-size:10px}.price-caption{font-size:10px;margin-top:11px}.plan-users{font-size:11px}.pricing-card .button{font-size:12px;min-height:46px}.pricing-card h4{font-size:11px}.pricing-card li{font-size:11px;gap:10px}.pricing-card ul{gap:13px}.pricing-switch{margin-bottom:27px}.pricing-switch button{font-size:11px;min-width:102px}.pricing-note{padding-inline:8px}.pricing-note p,.pricing-note p+p{font-size:9px}.pricing-note a{font-size:10px}}
+.animated-count{font-variant-numeric:tabular-nums}.expertise-number>strong>.animated-count,.trial-duration>.animated-count{display:inline-block;min-width:2ch}
